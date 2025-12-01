@@ -219,7 +219,9 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
     // Only prevent default if horizontal movement is greater than vertical (swipe horizontally)
     // This allows vertical scrolling while enabling horizontal swiping
     if (diffX > diffY && diffX > 10) {
-      e.preventDefault();
+      try {
+        e.preventDefault();
+      } catch { /* Do nothing */}
     }
     
     handleMove(touch.clientX);
@@ -298,6 +300,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
   }
 
   const getTransform = (): string => {
+    console.log(303);
     const baseTransform = -currentIndex * 100;
     const sliderWidth = sliderRef.current?.offsetWidth || 1;
     const offsetPercent = (offset / sliderWidth) * 100;
