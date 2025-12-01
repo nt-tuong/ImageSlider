@@ -1,0 +1,95 @@
+.navigation-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.8);
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 10;
+  color: #333;
+  font-weight: bold;
+}
+
+.navigation-arrow:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.navigation-arrow-prev {
+  left: 15px;
+}
+
+.navigation-arrow:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.navigation-arrow.disabled,
+.navigation-arrow:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.navigation-arrow.disabled:hover,
+.navigation-arrow:disabled:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateY(-50%) scale(1);
+}
+
+/* Desktop: Show on hover */
+@media (hover: hover) and (pointer: fine) {
+  .navigation-arrow {
+    opacity: 0.6;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  
+  .image-slider-wrapper:hover .navigation-arrow,
+  .image-slider-container:hover .navigation-arrow {
+    opacity: 1;
+  }
+}
+
+/* Mobile: Always visible but smaller */
+@media (hover: none) and (pointer: coarse) {
+  .navigation-arrow {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    opacity: 0.8;
+    background: rgba(255, 255, 255, 0.9);
+  }
+  
+  .navigation-arrow-prev {
+    left: 10px;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .navigation-arrow {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .navigation-arrow-prev {
+    left: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navigation-arrow {
+    width: 35px;
+    height: 35px;
+    font-size: 18px;
+  }
+}
+
