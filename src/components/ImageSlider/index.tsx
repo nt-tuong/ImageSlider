@@ -5,7 +5,9 @@ import NavigationArrowNext from '../NavigationArrowNext';
 
 interface ImageSliderProps {
   images: string[];
-  loop?: boolean;
+  isLoop?: boolean;
+  autoPlay?: boolean;
+  showNavigation?: boolean;
 }
 
 interface StateRef {
@@ -13,8 +15,8 @@ interface StateRef {
   imagesLength: number;
 }
 
-const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], loop = false }) => {
-  const [currentIndex, setCurrentIndex] = useState<number>(loop ? 1 : 0);
+const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, autoPlay = false, showNavigation = true }) => {
+  const [currentIndex, setCurrentIndex] = useState<number>(isLoop ? 1 : 0);
   const [startX, setStartX] = useState<number | null>(null);
   const [startY, setStartY] = useState<number | null>(null);
   const [offset, setOffset] = useState<number>(0);
@@ -23,13 +25,14 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], loop = false }) 
   const sliderRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef<StateRef>({ currentIndex, imagesLength: images.length });
+  const isJumpingRef = useRef<boolean>(false);
 
   // Create slides array with clones for infinite loop
-  const slides = loop && images.length > 0 
+  const slides = isLoop && images.length > 0 
     ? [images[images.length - 1], ...images, images[0]]
     : images;
   
-  const realIndex = loop && images.length > 0
+  const realIndex = isLoop && images.length > 0
     ? currentIndex === 0 ? images.length - 1 : currentIndex === slides.length - 1 ? 0 : currentIndex - 1
     : currentIndex;
 
@@ -40,7 +43,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], loop = false }) 
 
   // Reset index when loop changes
   useEffect(() => {
-    if (loop && images.length > 0) {
+    if (isLoop && images.length > 0) {
       // Start at index 1 (first real image) when loop is enabled
       setCurrentIndex((prev) => {
         if (prev === 0 || prev >= images.length + 2) {
@@ -57,57 +60,87 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], loop = false }) 
         return prev;
       });
     }
-  }, [loop, images.length]);
+  }, [isLoop, images.length]);
 
   // Handle infinite loop jump (when loop is enabled)
   useEffect(() => {
-    if (!loop || !contentRef.current || images.length === 0) return;
+    if (!isLoop || !contentRef.current || images.length === 0 || isJumpingRef.current) return;
 
-    const handleTransitionEnd = (): void => {
-      if (!isTransitioning) return;
-      
-      setIsTransitioning(false);
-      
-      const totalSlides = images.length + 2; // original + 2 clones
-      
-      // Jump to real slide without transition
-      if (currentIndex === 0) {
-        // At clone of last image, jump to real last image (index = images.length)
-        contentRef.current!.style.transition = 'none';
-        setCurrentIndex(images.length);
-        // Force reflow
+    const totalSlides = images.length + 2;
+    const content = contentRef.current;
+    
+    // Check if we're at a clone slide and need to jump
+    if (currentIndex === 0 || currentIndex === totalSlides - 1) {
+      const handleTransitionEnd = (e: TransitionEvent): void => {
+        // Only handle transform transitions
+        if (e.propertyName !== 'transform') return;
+        
+        if (isJumpingRef.current) return;
+        isJumpingRef.current = true;
+        
+        // Jump to real slide without transition
+        content.style.transition = 'none';
+        
+        if (currentIndex === 0) {
+          // At clone of last image, jump to real last image (index = images.length)
+          setCurrentIndex(images.length);
+        } else {
+          // At clone of first image, jump to real first image (index = 1)
+          setCurrentIndex(1);
+        }
+        
+        setIsTransitioning(false);
+        
+        // Force reflow to apply the change immediately
+        void content.offsetWidth;
+        
+        // Restore transition in next frame
         requestAnimationFrame(() => {
-          if (contentRef.current) {
-            contentRef.current.style.transition = '';
-          }
+          requestAnimationFrame(() => {
+            if (contentRef.current) {
+              contentRef.current.style.transition = '';
+            }
+            isJumpingRef.current = false;
+          });
         });
-      } else if (currentIndex === totalSlides - 1) {
-        // At clone of first image, jump to real first image (index = 1)
-        contentRef.current!.style.transition = 'none';
-        setCurrentIndex(1);
-        // Force reflow
+        
+        content.removeEventListener('transitionend', handleTransitionEnd as EventListener);
+      };
+      
+      if (isTransitioning) {
+        content.addEventListener('transitionend', handleTransitionEnd as EventListener);
+        return () => {
+          content.removeEventListener('transitionend', handleTransitionEnd as EventListener);
+        };
+      } else {
+        // If not transitioning but at clone, jump immediately
+        isJumpingRef.current = true;
+        content.style.transition = 'none';
+        if (currentIndex === 0) {
+          setCurrentIndex(images.length);
+        } else {
+          setCurrentIndex(1);
+        }
+        void content.offsetWidth;
         requestAnimationFrame(() => {
-          if (contentRef.current) {
-            contentRef.current.style.transition = '';
-          }
+          requestAnimationFrame(() => {
+            if (contentRef.current) {
+              contentRef.current.style.transition = '';
+            }
+            isJumpingRef.current = false;
+          });
         });
       }
-    };
-
-    const content = contentRef.current;
-    if (content) {
-      content.addEventListener('transitionend', handleTransitionEnd);
-      return () => {
-        content.removeEventListener('transitionend', handleTransitionEnd);
-      };
+    } else {
+      setIsTransitioning(false);
     }
-  }, [loop, currentIndex, images.length, isTransitioning]);
+  }, [isLoop, currentIndex, images.length, isTransitioning]);
 
   // Minimum swipe distance (in pixels) to trigger slide change
   const minSwipeDistance = 50;
 
   const goToPrevious = (): void => {
-    if (loop && images.length > 0) {
+    if (isLoop && images.length > 0) {
       setIsTransitioning(true);
       setCurrentIndex((prevIndex) => prevIndex - 1);
     } else {
@@ -118,7 +151,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], loop = false }) 
   };
 
   const goToNext = (): void => {
-    if (loop && images.length > 0) {
+    if (isLoop && images.length > 0) {
       setIsTransitioning(true);
       setCurrentIndex((prevIndex) => prevIndex + 1);
     } else {
@@ -149,7 +182,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], loop = false }) 
     const isLeftSwipe = offset > minSwipeDistance;
     const isRightSwipe = offset < -minSwipeDistance;
 
-    if (loop && images.length > 0) {
+    if (isLoop && images.length > 0) {
       if (isLeftSwipe) {
         setIsTransitioning(true);
         goToNext();
@@ -226,7 +259,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], loop = false }) 
       const isLeftSwipe = currentOffset > minSwipeDistance;
       const isRightSwipe = currentOffset < -minSwipeDistance;
 
-      if (loop && images.length > 0) {
+      if (isLoop && images.length > 0) {
         setIsTransitioning(true);
         if (isLeftSwipe) {
           setCurrentIndex((prev) => prev + 1);
@@ -254,7 +287,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], loop = false }) 
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, startX, offset, loop, images.length]);
+  }, [isDragging, startX, offset, isLoop, images.length]);
 
   if (!images || images.length === 0) {
     return (
@@ -295,7 +328,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], loop = false }) 
           }}
         >
           {slides.map((image, index) => (
-            <div key={`${loop ? 'loop-' : ''}${index}`} className="slide">
+            <div key={`${isLoop ? 'loop-' : ''}${index}`} className="slide">
               <img 
                 src={image} 
                 alt={`Slide ${index + 1}`}
@@ -307,15 +340,15 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], loop = false }) 
         </div>
 
         {/* Navigation Arrows */}
-        {images.length > 1 && (
+        {images.length > 1 && showNavigation && (
           <>
             <NavigationArrowPrevious 
               onClick={goToPrevious} 
-              disabled={!loop && realIndex === 0}
+              disabled={!isLoop && realIndex === 0}
             />
             <NavigationArrowNext 
               onClick={goToNext} 
-              disabled={!loop && realIndex === images.length - 1}
+              disabled={!isLoop && realIndex === images.length - 1}
             />
           </>
         )}

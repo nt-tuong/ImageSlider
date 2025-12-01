@@ -8,7 +8,7 @@ const TestImagePage: React.FC = () => {
   const navigate = useNavigate();
   const [autoPlay, setAutoPlay] = useState<boolean>(false);
   const [showNavigation, setShowNavigation] = useState<boolean>(true);
-  const [loop, setLoop] = useState<boolean>(false);
+  const [loop, setLoop] = useState<boolean>(true);
   
   const images: string[] = [
     'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=600&fit=crop',
@@ -49,7 +49,12 @@ const TestImagePage: React.FC = () => {
       </div>
       
       <div className="test-image-content">
-        <ImageSlider images={images} loop={loop} />
+        <ImageSlider
+          images={images}
+          isLoop={loop}
+          autoPlay={autoPlay}
+          showNavigation={showNavigation}
+        />
       </div>
     </div>
   );
