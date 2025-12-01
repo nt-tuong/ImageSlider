@@ -5,6 +5,7 @@ import NavigationArrowNext from '../NavigationArrowNext';
 
 interface ImageSliderProps {
   images: string[];
+  loop?: boolean;
 }
 
 interface StateRef {
@@ -12,32 +13,118 @@ interface StateRef {
   imagesLength: number;
 }
 
-const ImageSlider: React.FC<ImageSliderProps> = ({ images = [] }) => {
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
+const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], loop = false }) => {
+  const [currentIndex, setCurrentIndex] = useState<number>(loop ? 1 : 0);
   const [startX, setStartX] = useState<number | null>(null);
   const [startY, setStartY] = useState<number | null>(null);
   const [offset, setOffset] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
   const sliderRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef<StateRef>({ currentIndex, imagesLength: images.length });
+
+  // Create slides array with clones for infinite loop
+  const slides = loop && images.length > 0 
+    ? [images[images.length - 1], ...images, images[0]]
+    : images;
+  
+  const realIndex = loop && images.length > 0
+    ? currentIndex === 0 ? images.length - 1 : currentIndex === slides.length - 1 ? 0 : currentIndex - 1
+    : currentIndex;
 
   // Update ref when state changes
   useEffect(() => {
-    stateRef.current = { currentIndex, imagesLength: images.length };
-  }, [currentIndex, images.length]);
+    stateRef.current = { currentIndex: realIndex, imagesLength: images.length };
+  }, [currentIndex, images.length, realIndex]);
+
+  // Reset index when loop changes
+  useEffect(() => {
+    if (loop && images.length > 0) {
+      // Start at index 1 (first real image) when loop is enabled
+      setCurrentIndex((prev) => {
+        if (prev === 0 || prev >= images.length + 2) {
+          return 1;
+        }
+        return prev;
+      });
+    } else {
+      // Reset to valid index when loop is disabled
+      setCurrentIndex((prev) => {
+        if (prev >= images.length) {
+          return Math.min(prev, images.length - 1);
+        }
+        return prev;
+      });
+    }
+  }, [loop, images.length]);
+
+  // Handle infinite loop jump (when loop is enabled)
+  useEffect(() => {
+    if (!loop || !contentRef.current || images.length === 0) return;
+
+    const handleTransitionEnd = (): void => {
+      if (!isTransitioning) return;
+      
+      setIsTransitioning(false);
+      
+      const totalSlides = images.length + 2; // original + 2 clones
+      
+      // Jump to real slide without transition
+      if (currentIndex === 0) {
+        // At clone of last image, jump to real last image (index = images.length)
+        contentRef.current!.style.transition = 'none';
+        setCurrentIndex(images.length);
+        // Force reflow
+        requestAnimationFrame(() => {
+          if (contentRef.current) {
+            contentRef.current.style.transition = '';
+          }
+        });
+      } else if (currentIndex === totalSlides - 1) {
+        // At clone of first image, jump to real first image (index = 1)
+        contentRef.current!.style.transition = 'none';
+        setCurrentIndex(1);
+        // Force reflow
+        requestAnimationFrame(() => {
+          if (contentRef.current) {
+            contentRef.current.style.transition = '';
+          }
+        });
+      }
+    };
+
+    const content = contentRef.current;
+    if (content) {
+      content.addEventListener('transitionend', handleTransitionEnd);
+      return () => {
+        content.removeEventListener('transitionend', handleTransitionEnd);
+      };
+    }
+  }, [loop, currentIndex, images.length, isTransitioning]);
 
   // Minimum swipe distance (in pixels) to trigger slide change
   const minSwipeDistance = 50;
 
   const goToPrevious = (): void => {
-    if (currentIndex > 0) {
+    if (loop && images.length > 0) {
+      setIsTransitioning(true);
       setCurrentIndex((prevIndex) => prevIndex - 1);
+    } else {
+      if (currentIndex > 0) {
+        setCurrentIndex((prevIndex) => prevIndex - 1);
+      }
     }
   };
 
   const goToNext = (): void => {
-    if (currentIndex < images.length - 1) {
+    if (loop && images.length > 0) {
+      setIsTransitioning(true);
       setCurrentIndex((prevIndex) => prevIndex + 1);
+    } else {
+      if (currentIndex < images.length - 1) {
+        setCurrentIndex((prevIndex) => prevIndex + 1);
+      }
     }
   };
 
@@ -62,10 +149,20 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [] }) => {
     const isLeftSwipe = offset > minSwipeDistance;
     const isRightSwipe = offset < -minSwipeDistance;
 
-    if (isLeftSwipe && stateRef.current.currentIndex < stateRef.current.imagesLength - 1) {
-      goToNext();
-    } else if (isRightSwipe && stateRef.current.currentIndex > 0) {
-      goToPrevious();
+    if (loop && images.length > 0) {
+      if (isLeftSwipe) {
+        setIsTransitioning(true);
+        goToNext();
+      } else if (isRightSwipe) {
+        setIsTransitioning(true);
+        goToPrevious();
+      }
+    } else {
+      if (isLeftSwipe && stateRef.current.currentIndex < stateRef.current.imagesLength - 1) {
+        goToNext();
+      } else if (isRightSwipe && stateRef.current.currentIndex > 0) {
+        goToPrevious();
+      }
     }
 
     setStartX(null);
@@ -129,10 +226,19 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [] }) => {
       const isLeftSwipe = currentOffset > minSwipeDistance;
       const isRightSwipe = currentOffset < -minSwipeDistance;
 
-      if (isLeftSwipe && stateRef.current.currentIndex < stateRef.current.imagesLength - 1) {
-        setCurrentIndex((prev) => Math.min(prev + 1, stateRef.current.imagesLength - 1));
-      } else if (isRightSwipe && stateRef.current.currentIndex > 0) {
-        setCurrentIndex((prev) => Math.max(prev - 1, 0));
+      if (loop && images.length > 0) {
+        setIsTransitioning(true);
+        if (isLeftSwipe) {
+          setCurrentIndex((prev) => prev + 1);
+        } else if (isRightSwipe) {
+          setCurrentIndex((prev) => prev - 1);
+        }
+      } else {
+        if (isLeftSwipe && stateRef.current.currentIndex < stateRef.current.imagesLength - 1) {
+          setCurrentIndex((prev) => Math.min(prev + 1, stateRef.current.imagesLength - 1));
+        } else if (isRightSwipe && stateRef.current.currentIndex > 0) {
+          setCurrentIndex((prev) => Math.max(prev - 1, 0));
+        }
       }
 
       setStartX(null);
@@ -148,7 +254,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [] }) => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, startX, offset]);
+  }, [isDragging, startX, offset, loop, images.length]);
 
   if (!images || images.length === 0) {
     return (
@@ -177,14 +283,19 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [] }) => {
         ref={sliderRef}
       >
         <div 
+          ref={contentRef}
           className="image-slider-content"
           style={{ 
             transform: getTransform(),
-            transition: !isDragging ? 'transform 0.5s ease-in-out' : 'none'
+            transition: !isDragging && !isTransitioning 
+              ? 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)' 
+              : isDragging 
+                ? 'none' 
+                : 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
           }}
         >
-          {images.map((image, index) => (
-            <div key={index} className="slide">
+          {slides.map((image, index) => (
+            <div key={`${loop ? 'loop-' : ''}${index}`} className="slide">
               <img 
                 src={image} 
                 alt={`Slide ${index + 1}`}
@@ -200,11 +311,11 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [] }) => {
           <>
             <NavigationArrowPrevious 
               onClick={goToPrevious} 
-              disabled={currentIndex === 0}
+              disabled={!loop && realIndex === 0}
             />
             <NavigationArrowNext 
               onClick={goToNext} 
-              disabled={currentIndex === images.length - 1}
+              disabled={!loop && realIndex === images.length - 1}
             />
           </>
         )}

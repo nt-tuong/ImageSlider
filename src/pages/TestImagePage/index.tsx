@@ -8,6 +8,7 @@ const TestImagePage: React.FC = () => {
   const navigate = useNavigate();
   const [autoPlay, setAutoPlay] = useState<boolean>(false);
   const [showNavigation, setShowNavigation] = useState<boolean>(true);
+  const [loop, setLoop] = useState<boolean>(false);
   
   const images: string[] = [
     'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=600&fit=crop',
@@ -40,10 +41,15 @@ const TestImagePage: React.FC = () => {
           onChange={setShowNavigation}
           label="Show Navigation"
         />
+        <Switch 
+          checked={loop}
+          onChange={setLoop}
+          label="Loop"
+        />
       </div>
       
       <div className="test-image-content">
-        <ImageSlider images={images} />
+        <ImageSlider images={images} loop={loop} />
       </div>
     </div>
   );
