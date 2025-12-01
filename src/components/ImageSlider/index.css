@@ -30,6 +30,10 @@
   cursor: grabbing;
 }
 
+.image-slider-wrapper.transitioning {
+  cursor: default !important;
+}
+
 /* Desktop: show grab cursor */
 @media (hover: hover) and (pointer: fine) {
   .image-slider-wrapper {
@@ -38,6 +42,10 @@
   
   .image-slider-wrapper:active {
     cursor: grabbing;
+  }
+  
+  .image-slider-wrapper.transitioning {
+    cursor: default !important;
   }
 }
 

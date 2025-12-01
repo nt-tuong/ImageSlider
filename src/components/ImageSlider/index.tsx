@@ -73,43 +73,44 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
     }
     
     const totalSlides = images.length + 2;
+    const content = contentRef.current;
     
-    // If at clone slide, jump to real slide (no transition)
+    // If at clone slide, jump to real slide immediately (no transition, no delay)
     if (currentIndex === totalSlides - 1) {
       // At clone of first image, jump to real first image (index = 1)
       isJumpingRef.current = true;
-      const content = contentRef.current;
+      // Disable transition first
       content.style.transition = 'none';
+      // Update index immediately - this will trigger re-render
       setCurrentIndex(1);
+      // Force synchronous reflow to apply the change immediately
       void content.offsetWidth;
+      // Restore transition in next frame (async, but jump is already done)
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (contentRef.current) {
-            contentRef.current.style.transition = '';
-          }
-          isJumpingRef.current = false;
-          setIsTransitioning(false);
-        });
+        if (contentRef.current) {
+          contentRef.current.style.transition = '';
+        }
+        isJumpingRef.current = false;
       });
     } else if (currentIndex === 0) {
       // At clone of last image, jump to real last image (index = images.length)
       isJumpingRef.current = true;
-      const content = contentRef.current;
+      // Disable transition first
       content.style.transition = 'none';
+      // Update index immediately - this will trigger re-render
       setCurrentIndex(images.length);
+      // Force synchronous reflow to apply the change immediately
       void content.offsetWidth;
+      // Restore transition in next frame (async, but jump is already done)
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (contentRef.current) {
-            contentRef.current.style.transition = '';
-          }
-          isJumpingRef.current = false;
-          setIsTransitioning(false);
-        });
+        if (contentRef.current) {
+          contentRef.current.style.transition = '';
+        }
+        isJumpingRef.current = false;
       });
-    } else {
-      setIsTransitioning(false);
     }
+    
+    setIsTransitioning(false); // Stop transition immediately
   }, [isLoop, currentIndex, images.length]);
 
   // Minimum swipe distance (in pixels) to trigger slide change
@@ -118,6 +119,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
   const swipeThreshold = 0.3;
 
   const goToPrevious = (): void => {
+    if (isTransitioning) return;
     if (isLoop && images.length > 0) {
       setIsTransitioning(true);
       setCurrentIndex((prevIndex) => prevIndex - 1);
@@ -129,6 +131,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
   };
 
   const goToNext = (): void => {
+    if (isTransitioning) return;
     if (isLoop && images.length > 0) {
       setIsTransitioning(true);
       setCurrentIndex((prevIndex) => prevIndex + 1);
@@ -356,20 +359,25 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
   return (
     <div className="image-slider-container">
       <div 
-        className="image-slider-wrapper"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        onTouchCancel={onTouchCancel}
-        onMouseDown={onMouseDown}
+        className={`image-slider-wrapper ${isTransitioning ? 'transitioning' : ''}`}
         ref={sliderRef}
+        style={{
+          cursor: isTransitioning ? 'default' : undefined
+        }}
+        {...!isTransitioning && {
+          onTouchStart: onTouchStart,
+          onTouchMove: onTouchMove,
+          onTouchEnd: onTouchEnd,
+          onTouchCancel: onTouchCancel,
+          onMouseDown: onMouseDown,
+        }}
       >
         <div 
           ref={contentRef}
           className="image-slider-content"
           style={{ 
             transform: getTransform(),
-            transition: isTransitioning && !isDragging 
+            transition: isTransitioning && !isDragging
               ? 'transform 0.5s ease-in-out' 
               : 'none'
           }}
@@ -392,11 +400,11 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
           <>
             <NavigationArrowPrevious 
               onClick={goToPrevious} 
-              disabled={!isLoop && realIndex === 0}
+              disabled={(!isLoop && realIndex === 0) || isTransitioning}
             />
             <NavigationArrowNext 
               onClick={goToNext} 
-              disabled={!isLoop && realIndex === images.length - 1}
+              disabled={(!isLoop && realIndex === images.length - 1) || isTransitioning}
             />
           </>
         )}
