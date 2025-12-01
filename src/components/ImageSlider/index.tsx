@@ -126,6 +126,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
       setCurrentIndex((prevIndex) => prevIndex - 1);
     } else {
       if (currentIndex > 0) {
+        setIsTransitioning(true);
         setCurrentIndex((prevIndex) => prevIndex - 1);
       }
     }
@@ -138,6 +139,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
       setCurrentIndex((prevIndex) => prevIndex + 1);
     } else {
       if (currentIndex < images.length - 1) {
+        setIsTransitioning(true);
         setCurrentIndex((prevIndex) => prevIndex + 1);
       }
     }
@@ -200,17 +202,22 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
         // No change, just reset (snap back)
         setIsTransitioning(false);
       }
-    } else {
-      // Non-loop mode: respect bounds
-      const isLeftSwipe = offset > minSwipeDistance;
-      const isRightSwipe = offset < -minSwipeDistance;
-      
-      if (isLeftSwipe && stateRef.current.currentIndex < stateRef.current.imagesLength - 1) {
-        goToNext();
-      } else if (isRightSwipe && stateRef.current.currentIndex > 0) {
-        goToPrevious();
+      } else {
+        // Non-loop mode: respect bounds
+        const isLeftSwipe = offset > minSwipeDistance;
+        const isRightSwipe = offset < -minSwipeDistance;
+        
+        if (isLeftSwipe && stateRef.current.currentIndex < stateRef.current.imagesLength - 1) {
+          setIsTransitioning(true);
+          goToNext();
+        } else if (isRightSwipe && stateRef.current.currentIndex > 0) {
+          setIsTransitioning(true);
+          goToPrevious();
+        } else {
+          // No change, just reset (snap back)
+          setIsTransitioning(false);
+        }
       }
-    }
 
     setStartX(null);
     setStartY(null);
@@ -308,9 +315,14 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
         const isRightSwipe = offset < -minSwipeDistance;
         
         if (isLeftSwipe && stateRef.current.currentIndex < stateRef.current.imagesLength - 1) {
+          setIsTransitioning(true);
           setCurrentIndex((prev) => Math.min(prev + 1, stateRef.current.imagesLength - 1));
         } else if (isRightSwipe && stateRef.current.currentIndex > 0) {
+          setIsTransitioning(true);
           setCurrentIndex((prev) => Math.max(prev - 1, 0));
+        } else {
+          // No change, just reset (snap back)
+          setIsTransitioning(false);
         }
       }
 
