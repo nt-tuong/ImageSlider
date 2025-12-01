@@ -62,34 +62,60 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
     }
   }, [isLoop, images.length]);
 
-  // Helper function to jump from clone slide to real slide (no transition)
-  const jumpToRealSlide = useCallback((targetIndex: number): void => {
-    if (!contentRef.current || isJumpingRef.current) return;
+  // Handle transition end - jump from clone slide to real slide (like CustomSlider)
+  const handleTransitionEnd = useCallback((e: React.TransitionEvent<HTMLDivElement>): void => {
+    // Only handle transform transitions
+    if (e.propertyName !== 'transform') return;
     
-    isJumpingRef.current = true;
-    const content = contentRef.current;
+    if (!isLoop || !contentRef.current || images.length === 0 || isJumpingRef.current) {
+      setIsTransitioning(false);
+      return;
+    }
     
-    // Disable transition for jump
-    content.style.transition = 'none';
-    setCurrentIndex(targetIndex);
+    const totalSlides = images.length + 2;
     
-    // Force reflow
-    void content.offsetWidth;
-    
-    // Restore transition in next frame
-    requestAnimationFrame(() => {
+    // If at clone slide, jump to real slide (no transition)
+    if (currentIndex === totalSlides - 1) {
+      // At clone of first image, jump to real first image (index = 1)
+      isJumpingRef.current = true;
+      const content = contentRef.current;
+      content.style.transition = 'none';
+      setCurrentIndex(1);
+      void content.offsetWidth;
       requestAnimationFrame(() => {
-        if (contentRef.current) {
-          contentRef.current.style.transition = '';
-        }
-        isJumpingRef.current = false;
-        setIsTransitioning(false);
+        requestAnimationFrame(() => {
+          if (contentRef.current) {
+            contentRef.current.style.transition = '';
+          }
+          isJumpingRef.current = false;
+          setIsTransitioning(false);
+        });
       });
-    });
-  }, []);
+    } else if (currentIndex === 0) {
+      // At clone of last image, jump to real last image (index = images.length)
+      isJumpingRef.current = true;
+      const content = contentRef.current;
+      content.style.transition = 'none';
+      setCurrentIndex(images.length);
+      void content.offsetWidth;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (contentRef.current) {
+            contentRef.current.style.transition = '';
+          }
+          isJumpingRef.current = false;
+          setIsTransitioning(false);
+        });
+      });
+    } else {
+      setIsTransitioning(false);
+    }
+  }, [isLoop, currentIndex, images.length]);
 
   // Minimum swipe distance (in pixels) to trigger slide change
   const minSwipeDistance = 50;
+  // Swipe threshold as percentage of slide width (like react-slick, default 30%)
+  const swipeThreshold = 0.3;
 
   const goToPrevious = (): void => {
     if (isLoop && images.length > 0) {
@@ -132,35 +158,42 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
     if (startX === null) return;
 
     const sliderWidth = sliderRef.current?.offsetWidth || 1;
+    const thresholdDistance = sliderWidth * swipeThreshold;
     
     if (isLoop && images.length > 0) {
       const totalSlides = images.length + 2;
-      // Calculate how many slides to move based on offset
-      // Allow free dragging - calculate based on actual offset
-      // offset = startX - clientX: positive when swiping left (next), negative when swiping right (prev)
-      const slidesToMove = Math.round(offset / sliderWidth);
-      let newIndex = currentIndex + slidesToMove;
       
-      // Clamp to valid range (including clone slides)
-      if (newIndex < 0) {
-        newIndex = 0; // Clone of last image
-      } else if (newIndex >= totalSlides) {
-        newIndex = totalSlides - 1; // Clone of first image
+      // React-slick style: check if swipe distance exceeds threshold
+      const absOffset = Math.abs(offset);
+      let newIndex = currentIndex;
+      
+      if (absOffset > thresholdDistance) {
+        // Swipe is significant enough to change slide
+        // offset = startX - clientX: positive when swiping left (next), negative when swiping right (prev)
+        if (offset > 0) {
+          // Swipe left -> next
+          newIndex = currentIndex + 1;
+        } else {
+          // Swipe right -> prev
+          newIndex = currentIndex - 1;
+        }
+        
+        // Clamp to valid range (including clone slides)
+        if (newIndex < 0) {
+          newIndex = 0; // Clone of last image
+        } else if (newIndex >= totalSlides) {
+          newIndex = totalSlides - 1; // Clone of first image
+        }
       }
+      // If swipe is not significant, newIndex stays as currentIndex (snap back)
       
-      // Check if we need to jump from clone to real slide
-      if (newIndex === 0) {
-        // Jump to real last image (index = images.length)
-        jumpToRealSlide(images.length);
-      } else if (newIndex === totalSlides - 1) {
-        // Jump to real first image (index = 1)
-        jumpToRealSlide(1);
-      } else if (newIndex !== currentIndex) {
+      // Update index (transition will be handled by onTransitionEnd)
+      if (newIndex !== currentIndex) {
         // Normal slide change with transition (only if index changed)
         setIsTransitioning(true);
         setCurrentIndex(newIndex);
       } else {
-        // No change, just reset
+        // No change, just reset (snap back)
         setIsTransitioning(false);
       }
     } else {
@@ -235,38 +268,45 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
       if (startX === null) return;
 
       const sliderWidth = sliderRef.current?.offsetWidth || 1;
+      const thresholdDistance = sliderWidth * swipeThreshold;
       
       // Get current index from state ref to avoid dependency
       const currentIdx = currentIndex;
       
       if (isLoop && images.length > 0) {
         const totalSlides = images.length + 2;
-        // Calculate how many slides to move based on offset
-        // Allow free dragging - calculate based on actual offset
-        // offset = startX - clientX: positive when swiping left (next), negative when swiping right (prev)
-        const slidesToMove = Math.round(offset / sliderWidth);
-        let newIndex = currentIdx + slidesToMove;
         
-        // Clamp to valid range (including clone slides)
-        if (newIndex < 0) {
-          newIndex = 0; // Clone of last image
-        } else if (newIndex >= totalSlides) {
-          newIndex = totalSlides - 1; // Clone of first image
+        // React-slick style: check if swipe distance exceeds threshold
+        const absOffset = Math.abs(offset);
+        let newIndex = currentIdx;
+        
+        if (absOffset > thresholdDistance) {
+          // Swipe is significant enough to change slide
+          // offset = startX - clientX: positive when swiping left (next), negative when swiping right (prev)
+          if (offset > 0) {
+            // Swipe left -> next
+            newIndex = currentIdx + 1;
+          } else {
+            // Swipe right -> prev
+            newIndex = currentIdx - 1;
+          }
+          
+          // Clamp to valid range (including clone slides)
+          if (newIndex < 0) {
+            newIndex = 0; // Clone of last image
+          } else if (newIndex >= totalSlides) {
+            newIndex = totalSlides - 1; // Clone of first image
+          }
         }
+        // If swipe is not significant, newIndex stays as currentIdx (snap back)
         
-        // Check if we need to jump from clone to real slide
-        if (newIndex === 0) {
-          // Jump to real last image (index = images.length)
-          jumpToRealSlide(images.length);
-        } else if (newIndex === totalSlides - 1) {
-          // Jump to real first image (index = 1)
-          jumpToRealSlide(1);
-        } else if (newIndex !== currentIdx) {
+        // Update index (transition will be handled by onTransitionEnd)
+        if (newIndex !== currentIdx) {
           // Normal slide change with transition (only if index changed)
           setIsTransitioning(true);
           setCurrentIndex(newIndex);
         } else {
-          // No change, just reset
+          // No change, just reset (snap back)
           setIsTransitioning(false);
         }
       } else {
@@ -294,7 +334,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, startX, offset, isLoop, images.length, currentIndex, jumpToRealSlide]);
+  }, [isDragging, startX, offset, isLoop, images.length, currentIndex, swipeThreshold]);
 
   if (!images || images.length === 0) {
     return (
@@ -305,10 +345,12 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
   }
 
   const getTransform = (): string => {
-    const baseTransform = -currentIndex * 100;
     const sliderWidth = sliderRef.current?.offsetWidth || 1;
-    const offsetPercent = (offset / sliderWidth) * 100;
-    return `translateX(calc(${baseTransform}% - ${offsetPercent}px))`;
+    const baseTransform = -currentIndex * 100;
+    const offsetPercent = isDragging ? (offset / sliderWidth) * 100 : 0;
+    // offset = startX - clientX: positive when swiping left, negative when swiping right
+    // To move slide in drag direction, subtract offset
+    return `translateX(calc(${baseTransform}% - ${offsetPercent}%))`;
   };
 
   return (
@@ -327,12 +369,11 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
           className="image-slider-content"
           style={{ 
             transform: getTransform(),
-            transition: !isDragging && !isTransitioning 
-              ? 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)' 
-              : isDragging 
-                ? 'none' 
-                : 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
+            transition: isTransitioning && !isDragging 
+              ? 'transform 0.5s ease-in-out' 
+              : 'none'
           }}
+          onTransitionEnd={handleTransitionEnd}
         >
           {slides.map((image, index) => (
             <div key={`${isLoop ? 'loop-' : ''}${index}`} className="slide">
