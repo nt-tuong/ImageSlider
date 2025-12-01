@@ -18,7 +18,6 @@ interface StateRef {
 const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, autoPlay = false, showNavigation = true }) => {
   const [currentIndex, setCurrentIndex] = useState<number>(isLoop ? 1 : 0);
   const [startX, setStartX] = useState<number | null>(null);
-  const [startY, setStartY] = useState<number | null>(null);
   const [offset, setOffset] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
@@ -148,7 +147,6 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
   // Touch Events
   const handleStart = (clientX: number, clientY: number | null = null): void => {
     setStartX(clientX);
-    setStartY(clientY);
     setIsDragging(true);
     setOffset(0);
   };
@@ -220,7 +218,6 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
       }
 
     setStartX(null);
-    setStartY(null);
     setIsDragging(false);
     setOffset(0);
   };
@@ -243,7 +240,6 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
 
   const onTouchCancel = (): void => {
     setStartX(null);
-    setStartY(null);
     setIsDragging(false);
     setOffset(0);
   };
@@ -327,7 +323,6 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
       }
 
       setStartX(null);
-      setStartY(null);
       setIsDragging(false);
       setOffset(0);
     };
