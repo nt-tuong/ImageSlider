@@ -6,7 +6,19 @@
 
 .test-image-header {
   text-align: center;
+  margin-bottom: 20px;
+  color: white;
+}
+
+.test-image-controls {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
   margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.test-image-controls .switch-label {
   color: white;
 }
 

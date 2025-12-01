@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './index.css';
 import ImageSlider from '../../components/ImageSlider';
+import Switch from '../../components/Switch';
 
 const TestImagePage: React.FC = () => {
   const navigate = useNavigate();
+  const [autoPlay, setAutoPlay] = useState<boolean>(false);
+  const [showNavigation, setShowNavigation] = useState<boolean>(true);
   
   const images: string[] = [
     'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=600&fit=crop',
@@ -24,6 +27,19 @@ const TestImagePage: React.FC = () => {
           ← Back to Home
         </button>
         <h1>Test Image Slider</h1>
+      </div>
+      
+      <div className="test-image-controls">
+        <Switch 
+          checked={autoPlay}
+          onChange={setAutoPlay}
+          label="Auto Play"
+        />
+        <Switch 
+          checked={showNavigation}
+          onChange={setShowNavigation}
+          label="Show Navigation"
+        />
       </div>
       
       <div className="test-image-content">
