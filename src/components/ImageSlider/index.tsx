@@ -22,6 +22,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
   const [offset, setOffset] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
+  
   const sliderRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef<StateRef>({ currentIndex, imagesLength: images.length });
@@ -226,17 +227,6 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images = [], isLoop = false, 
     if (startX === null || !isDragging) return;
     
     const touch = e.touches[0];
-    const diffX = Math.abs(startX - touch.clientX);
-    const diffY = startY !== null ? Math.abs(startY - touch.clientY) : 0;
-    
-    // Only prevent default if horizontal movement is greater than vertical (swipe horizontally)
-    // This allows vertical scrolling while enabling horizontal swiping
-    if (diffX > diffY && diffX > 10) {
-      try {
-        e.preventDefault();
-      } catch { /* Do nothing */}
-    }
-    
     handleMove(touch.clientX);
   };
 
