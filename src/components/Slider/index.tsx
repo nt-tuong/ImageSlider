@@ -32,7 +32,7 @@ const Slider = ({
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
-    const [zoom, setZoom] = useState(INITIAL_ZOOM);
+  const [zoom, setZoom] = useState(INITIAL_ZOOM);
 
   const sliderRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -113,12 +113,7 @@ const Slider = ({
     // Start autoPlay timer
     autoPlayTimerRef.current = setInterval(() => {
       // Check again before auto-advancing
-      if (
-        isPaused ||
-        isTransitioning ||
-        isDragging ||
-        zoom > INITIAL_ZOOM
-      ) {
+      if (isPaused || isTransitioning || isDragging || zoom > INITIAL_ZOOM) {
         return;
       }
 
@@ -284,7 +279,6 @@ const Slider = ({
   // Touch Events
   const handleStart = (
     clientX: number,
-    clientY: number | null = null
   ): void => {
     // Pause autoPlay when user starts dragging
     if (autoPlay) {
@@ -348,8 +342,14 @@ const Slider = ({
         setIsTransitioning(true);
         setCurrentIndex(newIndex);
       } else {
-        // No change, just reset (snap back)
-        setIsTransitioning(false);
+        // No change, just reset (snap back) with transition
+        setIsDragging(false);
+        setIsTransitioning(true);
+        setOffset(0);
+        // Reset transition state after snap back animation completes
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, 500); // Match transition duration (0.5s)
       }
     } else {
       // Non-loop mode: respect bounds
@@ -366,8 +366,14 @@ const Slider = ({
         setIsTransitioning(true);
         goToPrevious();
       } else {
-        // No change, just reset (snap back)
-        setIsTransitioning(false);
+        // No change, just reset (snap back) with transition
+        setIsDragging(false);
+        setIsTransitioning(true);
+        setOffset(0);
+        // Reset transition state after snap back animation completes
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, 500); // Match transition duration (0.5s)
       }
     }
 
@@ -378,7 +384,7 @@ const Slider = ({
 
   const onTouchStart = (e: React.TouchEvent<HTMLDivElement>): void => {
     const touch = e.touches[0];
-    handleStart(touch.clientX, touch.clientY);
+    handleStart(touch.clientX);
   };
 
   const onTouchMove = (e: React.TouchEvent<HTMLDivElement>): void => {
@@ -401,13 +407,13 @@ const Slider = ({
   // Mouse Events (for desktop drag)
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>): void => {
     e.preventDefault();
-    handleStart(e.clientX, e.clientY);
+    handleStart(e.clientX);
   };
 
   // Add document-level mouse event listeners
   useEffect(() => {
     if (!isDragging) return;
-
+    
     const handleMouseMove = (e: MouseEvent): void => {
       if (startX === null) return;
       const diff = startX - e.clientX;
@@ -456,8 +462,14 @@ const Slider = ({
           setIsTransitioning(true);
           setCurrentIndex(newIndex);
         } else {
-          // No change, just reset (snap back)
-          setIsTransitioning(false);
+          // No change, just reset (snap back) with transition
+          setIsDragging(false);
+          setIsTransitioning(true);
+          setOffset(0);
+          // Reset transition state after snap back animation completes
+          setTimeout(() => {
+            setIsTransitioning(false);
+          }, 500); // Match transition duration (0.5s)
         }
       } else {
         // Non-loop mode: respect bounds
@@ -476,8 +488,14 @@ const Slider = ({
           setIsTransitioning(true);
           setCurrentIndex((prev) => Math.max(prev - 1, 0));
         } else {
-          // No change, just reset (snap back)
-          setIsTransitioning(false);
+          // No change, just reset (snap back) with transition
+          setIsDragging(false);
+          setIsTransitioning(true);
+          setOffset(0);
+          // Reset transition state after snap back animation completes
+          setTimeout(() => {
+            setIsTransitioning(false);
+          }, 500); // Match transition duration (0.5s)
         }
       }
 
