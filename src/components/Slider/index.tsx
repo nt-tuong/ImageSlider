@@ -20,6 +20,11 @@ const TRANSITION_DURATION = 500;
 const INITIAL_ZOOM = 100;
 const ZOOM_CLICK = 200;
 
+// Minimum swipe distance (in pixels) to trigger slide change
+const MIN_SWIPE_DISTANCE = 50;
+// Swipe threshold as percentage of slide width (like react-slick, default 30%)
+const SWIPE_THRESHOLD = 0.3;
+
 const Slider = ({
   images = [],
   isLoop = false,
@@ -257,13 +262,10 @@ const Slider = ({
     [isLoop, currentIndex, images.length]
   );
 
-  // Minimum swipe distance (in pixels) to trigger slide change
-  const minSwipeDistance = 50;
-  // Swipe threshold as percentage of slide width (like react-slick, default 30%)
-  const swipeThreshold = 0.3;
-
-  const goToPrevious = (): void => {
+  const goToPrevious = (e: React.MouseEvent<HTMLButtonElement>): void => {
     if (isTransitioning || zoom > INITIAL_ZOOM) return;
+    e.preventDefault();
+    e.stopPropagation();
 
     pauseAutoPlayTemporarily();
 
@@ -279,8 +281,10 @@ const Slider = ({
     }
   };
 
-  const goToNext = (): void => {
+  const goToNext = (e: React.MouseEvent<HTMLButtonElement>): void => {
     if (isTransitioning || zoom > INITIAL_ZOOM) return;
+    e.preventDefault();
+    e.stopPropagation();
 
     pauseAutoPlayTemporarily();
 
@@ -312,7 +316,7 @@ const Slider = ({
 
   const processSwipe = () => {
     const sliderWidth = sliderRef.current?.offsetWidth || 1;
-    const thresholdDistance = sliderWidth * swipeThreshold;
+    const thresholdDistance = sliderWidth * SWIPE_THRESHOLD;
 
     // Get current index from state ref to avoid dependency
     const currentIdx = currentIndex;
@@ -354,8 +358,8 @@ const Slider = ({
       }
     } else {
       // Non-loop mode: respect bounds
-      const isLeftSwipe = offset > minSwipeDistance;
-      const isRightSwipe = offset < -minSwipeDistance;
+      const isLeftSwipe = offset > MIN_SWIPE_DISTANCE;
+      const isRightSwipe = offset < -MIN_SWIPE_DISTANCE;
 
       if (
         isLeftSwipe &&
@@ -424,7 +428,6 @@ const Slider = ({
   };
 
   const onTouchEnd = (): void => {
-    console.log("onTouchEnd");
     handleEnd();
   };
 
@@ -476,7 +479,7 @@ const Slider = ({
     isLoop,
     images.length,
     currentIndex,
-    swipeThreshold,
+    SWIPE_THRESHOLD,
   ]);
 
   useEffect(() => {
@@ -528,6 +531,39 @@ const Slider = ({
     return "transform 0.5s ease-in-out";
   };
 
+  const processZoom = (): void => {
+    // TODO logic to process zoom
+    // const newX = e.clientX - dragStart.x;
+    // const newY = e.clientY - dragStart.y;
+    // let containerSize1 = { width: 0, height: 0 };
+    // let imageSize1 = { width: 0, height: 0 };
+    // if (imageRef.current) {
+    //   const rect = imageRef.current.getBoundingClientRect();
+    //   imageSize1 = {
+    //     width: rect.width,
+    //     height: rect.height,
+    //   };
+    // }
+    // if (imageContainerRef.current) {
+    //   const rect = imageContainerRef.current.getBoundingClientRect();
+    //   containerSize1 = {
+    //     width: rect.width,
+    //     height: rect.height,
+    //   };
+    // }
+    // const maxX = Math.max(0, (imageSize1.width - containerSize1.width) / 2);
+    // const minX = -maxX;
+    // const maxY = Math.max(0, (imageSize1.height - containerSize1.height) / 2);
+    // const minY = -maxY;
+    // // Apply limit bounds
+    // const constrainedX = Math.max(minX, Math.min(maxX, newX));
+    // const constrainedY = Math.max(minY, Math.min(maxY, newY));
+    // setImagePosition({
+    //   x: constrainedX,
+    //   y: constrainedY,
+    // });
+  };
+
   return (
     <div className="image-slider-container">
       <div
@@ -540,15 +576,13 @@ const Slider = ({
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        {...(!isTransitioning &&
-          !isZoomingRef.current &&
-        {
-            onTouchStart: onTouchStart,
-            onTouchMove: onTouchMove,
-            onTouchEnd: onTouchEnd,
-            onTouchCancel: onTouchCancel,
-            onMouseDown: onMouseDown,
-          })}
+        {...(!isTransitioning && { // !isZoomingRef.current &&
+          onTouchStart: onTouchStart,
+          onTouchMove: onTouchMove,
+          onTouchEnd: onTouchEnd,
+          onTouchCancel: onTouchCancel,
+          onMouseDown: onMouseDown,
+        })}
         onClick={handleClick}
       >
         <div
