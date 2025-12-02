@@ -1,21 +1,13 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { RouterProvider } from 'react-router-dom';
 import './App.css';
-import IndexPage from './pages/IndexPage';
-import SliderPage from './pages/SliderPage';
-import TestChatPage from './pages/TestChatPage';
+import { router } from './Router';
 
 const App: React.FC = () => {
   return (
-    <Router>
-      <div className="App">
-        <Routes>
-          <Route path="/" element={<IndexPage />} />
-          <Route path="/slider" element={<SliderPage />} />
-          <Route path="/test-chat" element={<TestChatPage />} />
-        </Routes>
-      </div>
-    </Router>
+    <div className="App">
+      <RouterProvider router={router} />
+    </div>
   );
 };
 
