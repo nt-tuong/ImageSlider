@@ -7,6 +7,7 @@ interface SliderProps {
   images: string[];
   isLoop?: boolean;
   autoPlay?: boolean;
+  autoPlayInterval?: number; // in milliseconds, default 3000
   showNavigation?: boolean;
 }
 
@@ -19,6 +20,7 @@ const Slider = ({
   images = [],
   isLoop = false,
   autoPlay = false,
+  autoPlayInterval = 3000, // default 3 seconds
   showNavigation = true,
 }: SliderProps) => {
   const INITIAL_ZOOM = 100;
@@ -29,9 +31,12 @@ const Slider = ({
   const [offset, setOffset] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+    const [zoom, setZoom] = useState(INITIAL_ZOOM);
 
   const sliderRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const autoPlayTimerRef = useRef<NodeJS.Timeout | null>(null);
   const stateRef = useRef<StateRef>({
     currentIndex,
     imagesLength: images.length,
@@ -78,6 +83,97 @@ const Slider = ({
       });
     }
   }, [isLoop, images.length]);
+
+  // AutoPlay functionality
+  useEffect(() => {
+    // Clear existing timer
+    if (autoPlayTimerRef.current) {
+      clearInterval(autoPlayTimerRef.current);
+      autoPlayTimerRef.current = null;
+    }
+
+    // Don't start autoPlay if:
+    // - autoPlay is disabled
+    // - no images or only one image
+    // - is paused
+    // - is transitioning
+    // - is dragging
+    // - is zoomed
+    if (
+      !autoPlay ||
+      images.length <= 1 ||
+      isPaused ||
+      isTransitioning ||
+      isDragging ||
+      zoom > INITIAL_ZOOM
+    ) {
+      return;
+    }
+
+    // Start autoPlay timer
+    autoPlayTimerRef.current = setInterval(() => {
+      // Check again before auto-advancing
+      if (
+        isPaused ||
+        isTransitioning ||
+        isDragging ||
+        zoom > INITIAL_ZOOM
+      ) {
+        return;
+      }
+
+      // Auto-advance to next slide
+      if (isLoop && images.length > 0) {
+        setIsTransitioning(true);
+        setCurrentIndex((prevIndex) => {
+          const totalSlides = images.length + 2;
+          const nextIndex = prevIndex + 1;
+          return nextIndex >= totalSlides ? 0 : nextIndex;
+        });
+      } else {
+        // Non-loop mode: go to next, or loop back to start if at end
+        setIsTransitioning(true);
+        setCurrentIndex((prevIndex) => {
+          if (prevIndex < images.length - 1) {
+            return prevIndex + 1;
+          } else {
+            // At the end, loop back to start if autoPlay is enabled
+            return 0;
+          }
+        });
+      }
+    }, autoPlayInterval);
+
+    // Cleanup on unmount or when dependencies change
+    return () => {
+      if (autoPlayTimerRef.current) {
+        clearInterval(autoPlayTimerRef.current);
+        autoPlayTimerRef.current = null;
+      }
+    };
+  }, [
+    autoPlay,
+    autoPlayInterval,
+    images.length,
+    isLoop,
+    isPaused,
+    isTransitioning,
+    isDragging,
+    zoom,
+  ]);
+
+  // Pause autoPlay on hover
+  const handleMouseEnter = (): void => {
+    if (autoPlay) {
+      setIsPaused(true);
+    }
+  };
+
+  const handleMouseLeave = (): void => {
+    if (autoPlay) {
+      setIsPaused(false);
+    }
+  };
 
   // Handle transition end - jump from clone slide to real slide (like CustomSlider)
   const handleTransitionEnd = useCallback(
@@ -144,7 +240,15 @@ const Slider = ({
   const swipeThreshold = 0.3;
 
   const goToPrevious = (): void => {
-    if (isTransitioning) return;
+    if (isTransitioning || zoom > INITIAL_ZOOM) return;
+    // Pause autoPlay when user manually navigates
+    if (autoPlay) {
+      setIsPaused(true);
+      // Resume after a delay
+      setTimeout(() => {
+        setIsPaused(false);
+      }, autoPlayInterval * 2);
+    }
     if (isLoop && images.length > 0) {
       setIsTransitioning(true);
       setCurrentIndex((prevIndex) => prevIndex - 1);
@@ -157,7 +261,15 @@ const Slider = ({
   };
 
   const goToNext = (): void => {
-    if (isTransitioning) return;
+    if (isTransitioning || zoom > INITIAL_ZOOM) return;
+    // Pause autoPlay when user manually navigates
+    if (autoPlay) {
+      setIsPaused(true);
+      // Resume after a delay
+      setTimeout(() => {
+        setIsPaused(false);
+      }, autoPlayInterval * 2);
+    }
     if (isLoop && images.length > 0) {
       setIsTransitioning(true);
       setCurrentIndex((prevIndex) => prevIndex + 1);
@@ -174,6 +286,10 @@ const Slider = ({
     clientX: number,
     clientY: number | null = null
   ): void => {
+    // Pause autoPlay when user starts dragging
+    if (autoPlay) {
+      setIsPaused(true);
+    }
     setStartX(clientX);
     setIsDragging(true);
     setOffset(0);
@@ -188,6 +304,13 @@ const Slider = ({
 
   const handleEnd = (): void => {
     if (startX === null) return;
+
+    // Resume autoPlay after user finishes dragging (with delay)
+    if (autoPlay) {
+      setTimeout(() => {
+        setIsPaused(false);
+      }, autoPlayInterval);
+    }
 
     const sliderWidth = sliderRef.current?.offsetWidth || 1;
     const thresholdDistance = sliderWidth * swipeThreshold;
@@ -407,6 +530,8 @@ const Slider = ({
         style={{
           cursor: isTransitioning ? "default" : undefined,
         }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         {...(!isTransitioning && {
           onTouchStart: onTouchStart,
           onTouchMove: onTouchMove,
