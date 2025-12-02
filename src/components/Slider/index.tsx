@@ -35,7 +35,6 @@ const Slider = ({
   const [isTransitioningAfterSnapBack, setIsTransitioningAfterSnapBack] =
     useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [zoom, setZoom] = useState(INITIAL_ZOOM);
 
   const sliderRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -47,6 +46,12 @@ const Slider = ({
   const isJumpingRef = useRef<boolean>(false);
   const resumeTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isMouseMoveRef = useRef<boolean>(false);
+
+  // Zoom in/out image position
+  const [zoom, setZoom] = useState(INITIAL_ZOOM);
+  const [imagePosition, setImagePosition] = React.useState({ x: 0, y: 0 });
+
+  const isZoomingRef = useRef<boolean>(false);
 
   // Create slides array with clones for infinite loop
   const slides =
@@ -172,7 +177,7 @@ const Slider = ({
 
     // Clear existing timeout to prevent multiple timeouts
     if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
-    
+
     // Set new timeout to resume autoPlay after a delay
     resumeTimerRef.current = setTimeout(
       () => setIsPaused(false),
@@ -259,7 +264,7 @@ const Slider = ({
 
   const goToPrevious = (): void => {
     if (isTransitioning || zoom > INITIAL_ZOOM) return;
-    
+
     pauseAutoPlayTemporarily();
 
     // Go to previous slide
@@ -276,7 +281,7 @@ const Slider = ({
 
   const goToNext = (): void => {
     if (isTransitioning || zoom > INITIAL_ZOOM) return;
-    
+
     pauseAutoPlayTemporarily();
 
     // Go to next slide
@@ -303,6 +308,74 @@ const Slider = ({
       // Reset mouse move flag
       isMouseMoveRef.current = false;
     }, TRANSITION_DURATION); // Match transition duration (0.5s)
+  };
+
+  const processSwipe = () => {
+    const sliderWidth = sliderRef.current?.offsetWidth || 1;
+    const thresholdDistance = sliderWidth * swipeThreshold;
+
+    // Get current index from state ref to avoid dependency
+    const currentIdx = currentIndex;
+
+    if (isLoop && images.length > 0) {
+      const totalSlides = images.length + 2;
+
+      // React-slick style: check if swipe distance exceeds threshold
+      const absOffset = Math.abs(offset);
+      let newIndex = currentIdx;
+
+      if (absOffset > thresholdDistance) {
+        // Swipe is significant enough to change slide
+        // offset = startX - clientX: positive when swiping left (next), negative when swiping right (prev)
+        if (offset > 0) {
+          // Swipe left -> next
+          newIndex = currentIdx + 1;
+        } else {
+          // Swipe right -> prev
+          newIndex = currentIdx - 1;
+        }
+
+        // Clamp to valid range (including clone slides)
+        if (newIndex < 0) {
+          newIndex = 0; // Clone of last image
+        } else if (newIndex >= totalSlides) {
+          newIndex = totalSlides - 1; // Clone of first image
+        }
+      }
+      // If swipe is not significant, newIndex stays as currentIdx (snap back)
+
+      // Update index (transition will be handled by onTransitionEnd)
+      if (newIndex !== currentIdx) {
+        // Normal slide change with transition (only if index changed)
+        setIsTransitioning(true);
+        setCurrentIndex(newIndex);
+      } else {
+        handleTransitionAfterSnapBack();
+      }
+    } else {
+      // Non-loop mode: respect bounds
+      const isLeftSwipe = offset > minSwipeDistance;
+      const isRightSwipe = offset < -minSwipeDistance;
+
+      if (
+        isLeftSwipe &&
+        stateRef.current.currentIndex < stateRef.current.imagesLength - 1
+      ) {
+        setIsTransitioning(true);
+        setCurrentIndex((prev) =>
+          Math.min(prev + 1, stateRef.current.imagesLength - 1)
+        );
+      } else if (isRightSwipe && stateRef.current.currentIndex > 0) {
+        setIsTransitioning(true);
+        setCurrentIndex((prev) => Math.max(prev - 1, 0));
+      } else {
+        handleTransitionAfterSnapBack();
+      }
+    }
+
+    setStartX(null);
+    setIsDragging(false);
+    setOffset(0);
   };
 
   // Touch Events
@@ -333,66 +406,7 @@ const Slider = ({
       }, autoPlayInterval);
     }
 
-    const sliderWidth = sliderRef.current?.offsetWidth || 1;
-    const thresholdDistance = sliderWidth * swipeThreshold;
-
-    if (isLoop && images.length > 0) {
-      const totalSlides = images.length + 2;
-
-      // React-slick style: check if swipe distance exceeds threshold
-      const absOffset = Math.abs(offset);
-      let newIndex = currentIndex;
-
-      if (absOffset > thresholdDistance) {
-        // Swipe is significant enough to change slide
-        // offset = startX - clientX: positive when swiping left (next), negative when swiping right (prev)
-        if (offset > 0) {
-          // Swipe left -> next
-          newIndex = currentIndex + 1;
-        } else {
-          // Swipe right -> prev
-          newIndex = currentIndex - 1;
-        }
-
-        // Clamp to valid range (including clone slides)
-        if (newIndex < 0) {
-          newIndex = 0; // Clone of last image
-        } else if (newIndex >= totalSlides) {
-          newIndex = totalSlides - 1; // Clone of first image
-        }
-      }
-      // If swipe is not significant, newIndex stays as currentIndex (snap back)
-
-      // Update index (transition will be handled by onTransitionEnd)
-      if (newIndex !== currentIndex) {
-        // Normal slide change with transition (only if index changed)
-        setIsTransitioning(true);
-        setCurrentIndex(newIndex);
-      } else {
-        handleTransitionAfterSnapBack();
-      }
-    } else {
-      // Non-loop mode: respect bounds
-      const isLeftSwipe = offset > minSwipeDistance;
-      const isRightSwipe = offset < -minSwipeDistance;
-
-      if (
-        isLeftSwipe &&
-        stateRef.current.currentIndex < stateRef.current.imagesLength - 1
-      ) {
-        setIsTransitioning(true);
-        goToNext();
-      } else if (isRightSwipe && stateRef.current.currentIndex > 0) {
-        setIsTransitioning(true);
-        goToPrevious();
-      } else {
-        handleTransitionAfterSnapBack();
-      }
-    }
-
-    setStartX(null);
-    setIsDragging(false);
-    setOffset(0);
+    processSwipe();
   };
 
   const onTouchStart = (e: React.TouchEvent<HTMLDivElement>): void => {
@@ -410,6 +424,7 @@ const Slider = ({
   };
 
   const onTouchEnd = (): void => {
+    console.log("onTouchEnd");
     handleEnd();
   };
 
@@ -432,7 +447,7 @@ const Slider = ({
 
     const handleMouseMove = (e: MouseEvent): void => {
       if (startX === null) return;
-      
+
       // Case: If mouse is moving, set the flag to true → not click
       isMouseMoveRef.current = true;
 
@@ -441,73 +456,10 @@ const Slider = ({
     };
 
     const handleMouseUp = (): void => {
+      console.log("handleMouseUp");
       if (startX === null) return;
 
-      const sliderWidth = sliderRef.current?.offsetWidth || 1;
-      const thresholdDistance = sliderWidth * swipeThreshold;
-
-      // Get current index from state ref to avoid dependency
-      const currentIdx = currentIndex;
-
-      if (isLoop && images.length > 0) {
-        const totalSlides = images.length + 2;
-
-        // React-slick style: check if swipe distance exceeds threshold
-        const absOffset = Math.abs(offset);
-        let newIndex = currentIdx;
-
-        if (absOffset > thresholdDistance) {
-          // Swipe is significant enough to change slide
-          // offset = startX - clientX: positive when swiping left (next), negative when swiping right (prev)
-          if (offset > 0) {
-            // Swipe left -> next
-            newIndex = currentIdx + 1;
-          } else {
-            // Swipe right -> prev
-            newIndex = currentIdx - 1;
-          }
-
-          // Clamp to valid range (including clone slides)
-          if (newIndex < 0) {
-            newIndex = 0; // Clone of last image
-          } else if (newIndex >= totalSlides) {
-            newIndex = totalSlides - 1; // Clone of first image
-          }
-        }
-        // If swipe is not significant, newIndex stays as currentIdx (snap back)
-
-        // Update index (transition will be handled by onTransitionEnd)
-        if (newIndex !== currentIdx) {
-          // Normal slide change with transition (only if index changed)
-          setIsTransitioning(true);
-          setCurrentIndex(newIndex);
-        } else {
-          handleTransitionAfterSnapBack();
-        }
-      } else {
-        // Non-loop mode: respect bounds
-        const isLeftSwipe = offset > minSwipeDistance;
-        const isRightSwipe = offset < -minSwipeDistance;
-
-        if (
-          isLeftSwipe &&
-          stateRef.current.currentIndex < stateRef.current.imagesLength - 1
-        ) {
-          setIsTransitioning(true);
-          setCurrentIndex((prev) =>
-            Math.min(prev + 1, stateRef.current.imagesLength - 1)
-          );
-        } else if (isRightSwipe && stateRef.current.currentIndex > 0) {
-          setIsTransitioning(true);
-          setCurrentIndex((prev) => Math.max(prev - 1, 0));
-        } else {
-          handleTransitionAfterSnapBack();
-        }
-      }
-
-      setStartX(null);
-      setIsDragging(false);
-      setOffset(0);
+      processSwipe();
     };
 
     document.addEventListener("mousemove", handleMouseMove);
@@ -527,6 +479,11 @@ const Slider = ({
     swipeThreshold,
   ]);
 
+  useEffect(() => {
+    // Reset position when zoom changes
+    setImagePosition({ x: 0, y: 0 });
+  }, [zoom]);
+
   if (!images || images.length === 0) {
     return (
       <div className="image-slider-container">
@@ -544,6 +501,33 @@ const Slider = ({
     return `translateX(calc(${baseTransform}% - ${offsetPercent}%))`;
   };
 
+  // Process zoom in/out image
+  const handleClick = (): void => {
+    console.log(isMouseMoveRef.current);
+    if (isMouseMoveRef.current) return;
+
+    // Handle logic to Zoom in/out image
+    // If zoom is INITIAL_ZOOM, set zoom to ZOOM_CLICK
+    // Else set zoom to INITIAL_ZOOM
+    if (zoom === INITIAL_ZOOM) {
+      setZoom(ZOOM_CLICK);
+      isZoomingRef.current = true;
+    } else {
+      setZoom(INITIAL_ZOOM);
+      isZoomingRef.current = false;
+    }
+  };
+
+  const getImageTransform = (): string => {
+    return `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${
+      zoom / 100
+    })`;
+  };
+
+  const getImageTransition = (): string => {
+    return "transform 0.5s ease-in-out";
+  };
+
   return (
     <div className="image-slider-container">
       <div
@@ -556,21 +540,16 @@ const Slider = ({
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        {...(!isTransitioning && {
-          onTouchStart: onTouchStart,
-          onTouchMove: onTouchMove,
-          onTouchEnd: onTouchEnd,
-          onTouchCancel: onTouchCancel,
-          onMouseDown: onMouseDown,
-        })}
-        onClick={() => {
-          console.log(isMouseMoveRef.current);
-          if (isMouseMoveRef.current) return;
-          
-          // TODO logic to Zoom in/out image
-          console.log(1246);
-          alert("click");
-        }}
+        {...(!isTransitioning &&
+          !isZoomingRef.current &&
+        {
+            onTouchStart: onTouchStart,
+            onTouchMove: onTouchMove,
+            onTouchEnd: onTouchEnd,
+            onTouchCancel: onTouchCancel,
+            onMouseDown: onMouseDown,
+          })}
+        onClick={handleClick}
       >
         <div
           ref={contentRef}
@@ -587,10 +566,16 @@ const Slider = ({
           {slides.map((image, index) => (
             <div key={`${isLoop ? "loop-" : ""}${index}`} className="slide">
               <img
+                style={{
+                  transform: getImageTransform(),
+                  transition: getImageTransition(),
+                }}
                 src={image}
                 alt={`Slide ${index + 1}`}
                 className="slide-image"
                 draggable={false}
+                // loading="lazy"
+                decoding="async"
               />
             </div>
           ))}

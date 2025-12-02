@@ -24,14 +24,14 @@ const SliderPage: React.FC = () => {
 
   return (
     <div className="slider-page">
-      <div className="slider-header">
+      {/* <div className="slider-header">
         <button 
           onClick={() => navigate('/')} 
           className="back-link"
         >
           ← Back to Home
         </button>
-      </div>
+      </div> */}
       
       {/* <div className="slider-controls">
         <Switch 
