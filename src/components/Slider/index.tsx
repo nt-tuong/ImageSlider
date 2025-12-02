@@ -16,6 +16,10 @@ interface StateRef {
   imagesLength: number;
 }
 
+const TRANSITION_DURATION = 500;
+const INITIAL_ZOOM = 100;
+const ZOOM_CLICK = 200;
+
 const Slider = ({
   images = [],
   isLoop = false,
@@ -23,9 +27,6 @@ const Slider = ({
   autoPlayInterval = 3000, // default 3 seconds
   showNavigation = true,
 }: SliderProps) => {
-  const INITIAL_ZOOM = 100;
-  const ZOOM_CLICK = 200;
-
   const [currentIndex, setCurrentIndex] = useState<number>(isLoop ? 1 : 0);
   const [startX, setStartX] = useState<number | null>(null);
   const [offset, setOffset] = useState<number>(0);
@@ -44,6 +45,7 @@ const Slider = ({
     imagesLength: images.length,
   });
   const isJumpingRef = useRef<boolean>(false);
+  const resumeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Create slides array with clones for infinite loop
   const slides =
@@ -159,6 +161,24 @@ const Slider = ({
     zoom,
   ]);
 
+  // Pause autoPlay temporarily
+  const pauseAutoPlayTemporarily = useCallback(() => {
+    // Do nothing if autoPlay is disabled
+    if (!autoPlay) return;
+
+    // Pause autoPlay
+    setIsPaused(true);
+
+    // Clear existing timeout to prevent multiple timeouts
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    
+    // Set new timeout to resume autoPlay after a delay
+    resumeTimerRef.current = setTimeout(
+      () => setIsPaused(false),
+      autoPlayInterval * 2
+    );
+  }, [autoPlay, autoPlayInterval]);
+
   // Pause autoPlay on hover
   const handleMouseEnter = (): void => {
     if (autoPlay) {
@@ -238,14 +258,10 @@ const Slider = ({
 
   const goToPrevious = (): void => {
     if (isTransitioning || zoom > INITIAL_ZOOM) return;
-    // Pause autoPlay when user manually navigates
-    if (autoPlay) {
-      setIsPaused(true);
-      // Resume after a delay
-      setTimeout(() => {
-        setIsPaused(false);
-      }, autoPlayInterval * 2);
-    }
+    
+    pauseAutoPlayTemporarily();
+
+    // Go to previous slide
     if (isLoop && images.length > 0) {
       setIsTransitioning(true);
       setCurrentIndex((prevIndex) => prevIndex - 1);
@@ -259,14 +275,10 @@ const Slider = ({
 
   const goToNext = (): void => {
     if (isTransitioning || zoom > INITIAL_ZOOM) return;
-    // Pause autoPlay when user manually navigates
-    if (autoPlay) {
-      setIsPaused(true);
-      // Resume after a delay
-      setTimeout(() => {
-        setIsPaused(false);
-      }, autoPlayInterval * 2);
-    }
+    
+    pauseAutoPlayTemporarily();
+
+    // Go to next slide
     if (isLoop && images.length > 0) {
       setIsTransitioning(true);
       setCurrentIndex((prevIndex) => prevIndex + 1);
@@ -276,6 +288,17 @@ const Slider = ({
         setCurrentIndex((prevIndex) => prevIndex + 1);
       }
     }
+  };
+
+  const handleTransitionAfterSnapBack = (): void => {
+    // No change, just reset (snap back)
+    setIsTransitioning(false);
+
+    // Reset transition state after snap back animation completes
+    setIsTransitioningAfterSnapBack(true);
+    setTimeout(() => {
+      setIsTransitioningAfterSnapBack(false);
+    }, TRANSITION_DURATION); // Match transition duration (0.5s)
   };
 
   // Touch Events
@@ -342,14 +365,7 @@ const Slider = ({
         setIsTransitioning(true);
         setCurrentIndex(newIndex);
       } else {
-        // No change, just reset (snap back)
-        setIsTransitioning(false);
-
-        // Reset transition state after snap back animation completes
-        setIsTransitioningAfterSnapBack(true);
-        setTimeout(() => {
-          setIsTransitioningAfterSnapBack(false);
-        }, 500); // Match transition duration (0.5s)
+        handleTransitionAfterSnapBack();
       }
     } else {
       // Non-loop mode: respect bounds
@@ -366,14 +382,7 @@ const Slider = ({
         setIsTransitioning(true);
         goToPrevious();
       } else {
-        // No change, just reset (snap back)
-        setIsTransitioning(false);
-
-        // Reset transition state after snap back animation completes
-        setIsTransitioningAfterSnapBack(true);
-        setTimeout(() => {
-          setIsTransitioningAfterSnapBack(false);
-        }, 500); // Match transition duration (0.5s)
+        handleTransitionAfterSnapBack();
       }
     }
 
@@ -383,12 +392,14 @@ const Slider = ({
   };
 
   const onTouchStart = (e: React.TouchEvent<HTMLDivElement>): void => {
+    console.log("onTouchStart");
     const touch = e.touches[0];
     handleStart(touch.clientX);
   };
 
   const onTouchMove = (e: React.TouchEvent<HTMLDivElement>): void => {
     if (startX === null || !isDragging) return;
+    console.log("onTouchMove");
 
     const touch = e.touches[0];
     handleMove(touch.clientX);
@@ -406,6 +417,7 @@ const Slider = ({
 
   // Mouse Events (for desktop drag)
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>): void => {
+    console.log("onMouseDown");
     e.preventDefault();
     handleStart(e.clientX);
   };
@@ -462,14 +474,7 @@ const Slider = ({
           setIsTransitioning(true);
           setCurrentIndex(newIndex);
         } else {
-          // No change, just reset (snap back)
-          setIsTransitioning(false);
-
-          // Reset transition state after snap back animation completes
-          setIsTransitioningAfterSnapBack(true);
-          setTimeout(() => {
-            setIsTransitioningAfterSnapBack(false);
-          }, 500); // Match transition duration (0.5s)
+          handleTransitionAfterSnapBack();
         }
       } else {
         // Non-loop mode: respect bounds
@@ -488,14 +493,7 @@ const Slider = ({
           setIsTransitioning(true);
           setCurrentIndex((prev) => Math.max(prev - 1, 0));
         } else {
-          // No change, just reset (snap back)
-          setIsTransitioning(false);
-
-          // Reset transition state after snap back animation completes
-          setIsTransitioningAfterSnapBack(true);
-          setTimeout(() => {
-            setIsTransitioningAfterSnapBack(false);
-          }, 500); // Match transition duration (0.5s)
+          handleTransitionAfterSnapBack();
         }
       }
 
@@ -557,6 +555,10 @@ const Slider = ({
           onTouchCancel: onTouchCancel,
           onMouseDown: onMouseDown,
         })}
+        onClick={() => {
+          // TODO logic to Zoom in/out image
+          console.log(1246);
+        }}
       >
         <div
           ref={contentRef}
