@@ -342,14 +342,8 @@ const Slider = ({
         setIsTransitioning(true);
         setCurrentIndex(newIndex);
       } else {
-        // No change, just reset (snap back) with transition
-        setIsDragging(false);
-        setIsTransitioning(true);
-        setOffset(0);
-        // Reset transition state after snap back animation completes
-        setTimeout(() => {
-          setIsTransitioning(false);
-        }, 500); // Match transition duration (0.5s)
+        // No change, just reset (snap back)
+        setIsTransitioning(false);
       }
     } else {
       // Non-loop mode: respect bounds
@@ -366,14 +360,8 @@ const Slider = ({
         setIsTransitioning(true);
         goToPrevious();
       } else {
-        // No change, just reset (snap back) with transition
-        setIsDragging(false);
-        setIsTransitioning(true);
-        setOffset(0);
-        // Reset transition state after snap back animation completes
-        setTimeout(() => {
-          setIsTransitioning(false);
-        }, 500); // Match transition duration (0.5s)
+        // No change, just reset (snap back)
+        setIsTransitioning(false);
       }
     }
 
@@ -462,14 +450,8 @@ const Slider = ({
           setIsTransitioning(true);
           setCurrentIndex(newIndex);
         } else {
-          // No change, just reset (snap back) with transition
-          setIsDragging(false);
-          setIsTransitioning(true);
-          setOffset(0);
-          // Reset transition state after snap back animation completes
-          setTimeout(() => {
-            setIsTransitioning(false);
-          }, 500); // Match transition duration (0.5s)
+          // No change, just reset (snap back)
+          setIsTransitioning(false);
         }
       } else {
         // Non-loop mode: respect bounds
@@ -488,14 +470,8 @@ const Slider = ({
           setIsTransitioning(true);
           setCurrentIndex((prev) => Math.max(prev - 1, 0));
         } else {
-          // No change, just reset (snap back) with transition
-          setIsDragging(false);
-          setIsTransitioning(true);
-          setOffset(0);
-          // Reset transition state after snap back animation completes
-          setTimeout(() => {
-            setIsTransitioning(false);
-          }, 500); // Match transition duration (0.5s)
+          // No change, just reset (snap back)
+          setIsTransitioning(false);
         }
       }
 
