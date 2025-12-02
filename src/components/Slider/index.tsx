@@ -31,6 +31,8 @@ const Slider = ({
   const [offset, setOffset] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
+  const [isTransitioningAfterSnapBack, setIsTransitioningAfterSnapBack] =
+    useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [zoom, setZoom] = useState(INITIAL_ZOOM);
 
@@ -277,9 +279,7 @@ const Slider = ({
   };
 
   // Touch Events
-  const handleStart = (
-    clientX: number,
-  ): void => {
+  const handleStart = (clientX: number): void => {
     // Pause autoPlay when user starts dragging
     if (autoPlay) {
       setIsPaused(true);
@@ -344,6 +344,12 @@ const Slider = ({
       } else {
         // No change, just reset (snap back)
         setIsTransitioning(false);
+
+        // Reset transition state after snap back animation completes
+        setIsTransitioningAfterSnapBack(true);
+        setTimeout(() => {
+          setIsTransitioningAfterSnapBack(false);
+        }, 500); // Match transition duration (0.5s)
       }
     } else {
       // Non-loop mode: respect bounds
@@ -362,6 +368,12 @@ const Slider = ({
       } else {
         // No change, just reset (snap back)
         setIsTransitioning(false);
+
+        // Reset transition state after snap back animation completes
+        setIsTransitioningAfterSnapBack(true);
+        setTimeout(() => {
+          setIsTransitioningAfterSnapBack(false);
+        }, 500); // Match transition duration (0.5s)
       }
     }
 
@@ -401,7 +413,7 @@ const Slider = ({
   // Add document-level mouse event listeners
   useEffect(() => {
     if (!isDragging) return;
-    
+
     const handleMouseMove = (e: MouseEvent): void => {
       if (startX === null) return;
       const diff = startX - e.clientX;
@@ -452,6 +464,12 @@ const Slider = ({
         } else {
           // No change, just reset (snap back)
           setIsTransitioning(false);
+
+          // Reset transition state after snap back animation completes
+          setIsTransitioningAfterSnapBack(true);
+          setTimeout(() => {
+            setIsTransitioningAfterSnapBack(false);
+          }, 500); // Match transition duration (0.5s)
         }
       } else {
         // Non-loop mode: respect bounds
@@ -472,6 +490,12 @@ const Slider = ({
         } else {
           // No change, just reset (snap back)
           setIsTransitioning(false);
+
+          // Reset transition state after snap back animation completes
+          setIsTransitioningAfterSnapBack(true);
+          setTimeout(() => {
+            setIsTransitioningAfterSnapBack(false);
+          }, 500); // Match transition duration (0.5s)
         }
       }
 
@@ -540,7 +564,7 @@ const Slider = ({
           style={{
             transform: getTransform(),
             transition:
-              isTransitioning && !isDragging
+              (isTransitioning || isTransitioningAfterSnapBack) && !isDragging
                 ? "transform 0.5s ease-in-out"
                 : "none",
           }}
