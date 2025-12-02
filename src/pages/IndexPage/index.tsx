@@ -16,13 +16,19 @@ const IndexPage: React.FC = () => {
             onClick={() => navigate('/test-image')} 
             className="nav-link"
           >
-            Test Image Slider
+            Test Image Slider (Old Version)
           </button>
           <button 
             onClick={() => navigate('/test-chat')} 
             className="nav-link"
           >
             Test Chat
+          </button>
+          <button 
+            onClick={() => navigate('/slider')} 
+            className="nav-link"
+          >
+            Test Slider (New Version)
           </button>
         </div>
       </div>

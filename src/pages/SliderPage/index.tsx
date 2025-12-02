@@ -31,10 +31,9 @@ const SliderPage: React.FC = () => {
         >
           ← Back to Home
         </button>
-        <h1>Slider Page</h1>
       </div>
       
-      <div className="slider-controls">
+      {/* <div className="slider-controls">
         <Switch 
           checked={autoPlay}
           onChange={setAutoPlay}
@@ -50,7 +49,7 @@ const SliderPage: React.FC = () => {
           onChange={setLoop}
           label="Loop"
         />
-      </div>
+      </div> */}
       
       <div className="slider-content">
         <Slider

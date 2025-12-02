@@ -46,6 +46,7 @@ const Slider = ({
   });
   const isJumpingRef = useRef<boolean>(false);
   const resumeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isMouseMoveRef = useRef<boolean>(false);
 
   // Create slides array with clones for infinite loop
   const slides =
@@ -298,6 +299,9 @@ const Slider = ({
     setIsTransitioningAfterSnapBack(true);
     setTimeout(() => {
       setIsTransitioningAfterSnapBack(false);
+
+      // Reset mouse move flag
+      isMouseMoveRef.current = false;
     }, TRANSITION_DURATION); // Match transition duration (0.5s)
   };
 
@@ -417,8 +421,8 @@ const Slider = ({
 
   // Mouse Events (for desktop drag)
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>): void => {
-    console.log("onMouseDown");
     e.preventDefault();
+    console.log("onMouseDown", e.clientX);
     handleStart(e.clientX);
   };
 
@@ -428,6 +432,10 @@ const Slider = ({
 
     const handleMouseMove = (e: MouseEvent): void => {
       if (startX === null) return;
+      
+      // Case: If mouse is moving, set the flag to true → not click
+      isMouseMoveRef.current = true;
+
       const diff = startX - e.clientX;
       setOffset(diff);
     };
@@ -556,8 +564,12 @@ const Slider = ({
           onMouseDown: onMouseDown,
         })}
         onClick={() => {
+          console.log(isMouseMoveRef.current);
+          if (isMouseMoveRef.current) return;
+          
           // TODO logic to Zoom in/out image
           console.log(1246);
+          alert("click");
         }}
       >
         <div
