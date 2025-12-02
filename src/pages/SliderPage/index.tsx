@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './index.css';
-import ImageSlider from '../../components/ImageSlider';
+import Slider from '../../components/Slider';
 import Switch from '../../components/Switch';
 
-const TestImagePage: React.FC = () => {
+const SliderPage: React.FC = () => {
   const navigate = useNavigate();
   const [autoPlay, setAutoPlay] = useState<boolean>(false);
   const [showNavigation, setShowNavigation] = useState<boolean>(true);
@@ -18,19 +18,23 @@ const TestImagePage: React.FC = () => {
     'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=1200&h=600&fit=crop',
   ];
 
+  useEffect(() => {
+    document.title = 'Slider Page';
+  }, []);
+
   return (
-    <div className="test-image-page">
-      <div className="test-image-header">
+    <div className="slider-page">
+      <div className="slider-header">
         <button 
           onClick={() => navigate('/')} 
           className="back-link"
         >
           ← Back to Home
         </button>
-        <h1>Test Image Slider</h1>
+        <h1>Slider Page</h1>
       </div>
       
-      <div className="test-image-controls">
+      <div className="slider-controls">
         <Switch 
           checked={autoPlay}
           onChange={setAutoPlay}
@@ -48,8 +52,8 @@ const TestImagePage: React.FC = () => {
         />
       </div>
       
-      <div className="test-image-content">
-        <ImageSlider
+      <div className="slider-content">
+        <Slider
           images={images}
           isLoop={loop}
           autoPlay={autoPlay}
@@ -60,5 +64,5 @@ const TestImagePage: React.FC = () => {
   );
 };
 
-export default TestImagePage;
+export default SliderPage;
 
