@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import "./index.css";
+// import "./index.css";
 import NavigationArrowPrevious from "../NavigationArrowPrevious";
 import NavigationArrowNext from "../NavigationArrowNext";
 

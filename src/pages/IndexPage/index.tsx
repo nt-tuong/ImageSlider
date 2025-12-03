@@ -12,12 +12,12 @@ const IndexPage: React.FC = () => {
         <p>Chào mừng bạn đến với ứng dụng Image Slider</p>
         
         <div className="navigation-links">
-          <button 
+          {/* <button 
             onClick={() => navigate('/test-image')} 
             className="nav-link"
           >
             Test Image Slider (Old Version)
-          </button>
+          </button> */}
           <button 
             onClick={() => navigate('/test-chat')} 
             className="nav-link"

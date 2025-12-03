@@ -24,7 +24,7 @@ const ZOOM_CLICK = 200;
 const MIN_SWIPE_DISTANCE = 50;
 // Swipe threshold as percentage of slide width (like react-slick, default 30%)
 const SWIPE_THRESHOLD = 0.3;
-
+// Zoom moving duration (in milliseconds)
 const ZOOM_MOVING_DURATION = 200;
 
 const Slider = ({
@@ -59,7 +59,10 @@ const Slider = ({
   const [zoom, setZoom] = useState(INITIAL_ZOOM);
   const [imagePosition, setImagePosition] = React.useState({ x: 0, y: 0 });
   const [isZoomDragging, setIsZoomDragging] = useState<boolean>(false);
-  const [zoomDragStart, setZoomDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [zoomDragStart, setZoomDragStart] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
 
   const imageRef = useRef<HTMLImageElement>(null);
   const slideRef = useRef<HTMLDivElement>(null);
@@ -318,7 +321,8 @@ const Slider = ({
 
   const resetMouseMoveFlag = () => {
     // Clear existing timeout to prevent multiple timeouts
-    if (resetMouseMoveTimerRef.current) clearTimeout(resetMouseMoveTimerRef.current);
+    if (resetMouseMoveTimerRef.current)
+      clearTimeout(resetMouseMoveTimerRef.current);
 
     // Set new timeout to reset mouse move flag
     resetMouseMoveTimerRef.current = setTimeout(() => {
@@ -395,17 +399,16 @@ const Slider = ({
     setStartX(null);
     setIsDragging(false);
     setOffset(0);
-    
+
     // Reset mouse move flag
     resetMouseMoveFlag();
   };
 
   // Touch Events
   const handleStart = (clientX: number): void => {
-    
     // Don't allow swipe when zoomed
     if (zoom > INITIAL_ZOOM) return;
-    
+
     // Pause autoPlay when user starts dragging
     if (autoPlay) {
       setIsPaused(true);
@@ -465,7 +468,7 @@ const Slider = ({
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>): void => {
     // Don't allow swipe when zoomed
     if (zoom > INITIAL_ZOOM) return;
-    
+
     e.preventDefault();
     handleStart(e.clientX);
   };
@@ -520,26 +523,28 @@ const Slider = ({
     // Get container and image sizes
     let containerSize = { width: 0, height: 0 };
     let imageSize = { width: 0, height: 0 };
-    
+
     if (slideRef.current) {
       const rect = slideRef.current.getBoundingClientRect();
       containerSize = {
         width: rect.width,
-        height: rect.height
+        height: rect.height,
       };
     }
 
     if (imageRef.current) {
       // Get the image element's computed style to get actual dimensions
       const computedStyle = window.getComputedStyle(imageRef.current);
-      const imageWidth = parseFloat(computedStyle.width) || imageRef.current.offsetWidth;
-      const imageHeight = parseFloat(computedStyle.height) || imageRef.current.offsetHeight;
-      
+      const imageWidth =
+        parseFloat(computedStyle.width) || imageRef.current.offsetWidth;
+      const imageHeight =
+        parseFloat(computedStyle.height) || imageRef.current.offsetHeight;
+
       // Calculate zoomed size
       const zoomScale = zoom / INITIAL_ZOOM;
       imageSize = {
         width: imageWidth * zoomScale,
-        height: imageHeight * zoomScale
+        height: imageHeight * zoomScale,
       };
     }
 
@@ -557,7 +562,7 @@ const Slider = ({
 
     setImagePosition({
       x: constrainedX,
-      y: constrainedY
+      y: constrainedY,
     });
   };
 
@@ -571,20 +576,41 @@ const Slider = ({
     setIsZoomDragging(true);
     setZoomDragStart({
       x: e.clientX - imagePosition.x,
-      y: e.clientY - imagePosition.y
+      y: e.clientY - imagePosition.y,
     });
   };
 
-  // Zoom mouse handlers
-  const handleTouchStart = (e: React.TouchEvent<HTMLImageElement>): void => {
+  // Zoom touch handlers
+  const onZoomTouchStart = (e: React.TouchEvent<HTMLImageElement>): void => {
     if (zoom <= INITIAL_ZOOM) return;
-    isZoomMovingRef.current = true;
+
     setIsZoomDragging(true);
     const touch = e.touches[0];
     setZoomDragStart({
       x: touch.clientX - imagePosition.x,
-      y: touch.clientY - imagePosition.y
+      y: touch.clientY - imagePosition.y,
     });
+  };
+
+  const onZoomTouchMove = (e: React.TouchEvent<HTMLImageElement>): void => {
+    if (!isZoomDragging || zoom <= INITIAL_ZOOM) return;
+
+    const touch = e.touches[0];
+    processZoomSwipe(touch.clientX, touch.clientY);
+  };
+
+  const onZoomTouchEnd = (e: React.TouchEvent<HTMLImageElement>): void => {
+    if (zoom <= INITIAL_ZOOM) return;
+
+    setIsZoomDragging(false);
+    cleanZoomMoving();
+  };
+
+  const onZoomTouchCancel = (e: React.TouchEvent<HTMLImageElement>): void => {
+    if (zoom <= INITIAL_ZOOM) return;
+
+    setIsZoomDragging(false);
+    cleanZoomMoving();
   };
 
   const cleanZoomMoving = () => {
@@ -593,10 +619,10 @@ const Slider = ({
 
     // Set new timeout to resume autoPlay after a delay
     zoomingTimerRef.current = setTimeout(
-      () => isZoomMovingRef.current = false,
+      () => (isZoomMovingRef.current = false),
       ZOOM_MOVING_DURATION
     );
-  }
+  };
 
   // Add document-level mouse event listeners for zoom pan
   useEffect(() => {
@@ -618,6 +644,41 @@ const Slider = ({
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isZoomDragging, zoom, zoomDragStart, imagePosition]);
+
+  // Add document-level touch event listeners for zoom pan
+  useEffect(() => {
+    if (!isZoomDragging || zoom <= INITIAL_ZOOM) return;
+
+    const handleTouchMove = (e: TouchEvent): void => {
+      if (!isZoomDragging) return;
+      e.preventDefault(); // Prevent scrolling when panning zoomed image
+      const touch = e.touches[0];
+      if (touch) {
+        isZoomMovingRef.current = true;
+        processZoomSwipe(touch.clientX, touch.clientY);
+      }
+    };
+
+    const handleTouchEnd = (): void => {
+      setIsZoomDragging(false);
+      cleanZoomMoving();
+    };
+
+    const handleTouchCancel = (): void => {
+      setIsZoomDragging(false);
+      cleanZoomMoving();
+    };
+
+    document.addEventListener("touchmove", handleTouchMove, { passive: false });
+    document.addEventListener("touchend", handleTouchEnd);
+    document.addEventListener("touchcancel", handleTouchCancel);
+
+    return () => {
+      document.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("touchend", handleTouchEnd);
+      document.removeEventListener("touchcancel", handleTouchCancel);
     };
   }, [isZoomDragging, zoom, zoomDragStart, imagePosition]);
 
@@ -683,13 +744,14 @@ const Slider = ({
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        {...(!isTransitioning && zoom <= INITIAL_ZOOM && {
-          onTouchStart: onTouchStart,
-          onTouchMove: onTouchMove,
-          onTouchEnd: onTouchEnd,
-          onTouchCancel: onTouchCancel,
-          onMouseDown: onMouseDown,
-        })}
+        {...(!isTransitioning &&
+          zoom <= INITIAL_ZOOM && {
+            onTouchStart: onTouchStart,
+            onTouchMove: onTouchMove,
+            onTouchEnd: onTouchEnd,
+            onTouchCancel: onTouchCancel,
+            onMouseDown: onMouseDown,
+          })}
         onClick={handleClick}
       >
         <div
@@ -705,8 +767,8 @@ const Slider = ({
           onTransitionEnd={handleTransitionEnd}
         >
           {slides.map((image, index) => (
-            <div 
-              key={`${isLoop ? "loop-" : ""}${index}`} 
+            <div
+              key={`${isLoop ? "loop-" : ""}${index}`}
               className="slide"
               ref={index === currentIndex ? slideRef : null}
             >
@@ -715,9 +777,12 @@ const Slider = ({
                 style={{
                   transform: getImageTransform(index),
                   transition: getImageTransition(),
-                  cursor: index === currentIndex && zoom > INITIAL_ZOOM 
-                    ? (isZoomDragging ? "grabbing" : "grab") 
-                    : "pointer",
+                  cursor:
+                    index === currentIndex && zoom > INITIAL_ZOOM
+                      ? isZoomDragging
+                        ? "grabbing"
+                        : "grab"
+                      : "pointer",
                   pointerEvents: "auto",
                 }}
                 src={image}
@@ -727,10 +792,10 @@ const Slider = ({
                 onMouseDown={handleZoomMouseDown}
                 decoding="async"
                 {...(zoom > INITIAL_ZOOM && {
-                  onTouchStart: handleTouchStart,
-                  // onTouchMove: handleTouchMove,
-                  // onTouchEnd: handleTouchEnd,
-                  // onTouchCancel: handleTouchCancel,
+                  onTouchStart: onZoomTouchStart,
+                  onTouchMove: onZoomTouchMove,
+                  onTouchEnd: onZoomTouchEnd,
+                  onTouchCancel: onZoomTouchCancel,
                 })}
               />
             </div>
@@ -742,12 +807,18 @@ const Slider = ({
           <>
             <NavigationArrowPrevious
               onClick={goToPrevious}
-              disabled={(!isLoop && realIndex === 0) || isTransitioning || zoom > INITIAL_ZOOM}
+              disabled={
+                (!isLoop && realIndex === 0) ||
+                isTransitioning ||
+                zoom > INITIAL_ZOOM
+              }
             />
             <NavigationArrowNext
               onClick={goToNext}
               disabled={
-                (!isLoop && realIndex === images.length - 1) || isTransitioning || zoom > INITIAL_ZOOM
+                (!isLoop && realIndex === images.length - 1) ||
+                isTransitioning ||
+                zoom > INITIAL_ZOOM
               }
             />
           </>
