@@ -11,6 +11,7 @@ const SliderPage: React.FC = () => {
   const [loop, setLoop] = useState<boolean>(true);
   
   const images: string[] = [
+    '/assets/images/pexels-cottonbro-10034377.jpg',
     'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=600&fit=crop',
     'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&h=600&fit=crop',
     'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&h=600&fit=crop',

@@ -52,6 +52,7 @@ const Slider = ({
   });
   const isJumpingRef = useRef<boolean>(false);
   const resumeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const resetMouseMoveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isMouseMoveRef = useRef<boolean>(false);
 
   // Zoom in/out image position
@@ -313,7 +314,14 @@ const Slider = ({
 
     // Reset transition state after snap back animation completes
     setIsTransitioningAfterSnapBack(true);
-    setTimeout(() => {
+  };
+
+  const resetMouseMoveFlag = () => {
+    // Clear existing timeout to prevent multiple timeouts
+    if (resetMouseMoveTimerRef.current) clearTimeout(resetMouseMoveTimerRef.current);
+
+    // Set new timeout to reset mouse move flag
+    resetMouseMoveTimerRef.current = setTimeout(() => {
       setIsTransitioningAfterSnapBack(false);
 
       // Reset mouse move flag
@@ -387,6 +395,9 @@ const Slider = ({
     setStartX(null);
     setIsDragging(false);
     setOffset(0);
+    
+    // Reset mouse move flag
+    resetMouseMoveFlag();
   };
 
   // Touch Events
