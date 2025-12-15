@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './index.css';
 
 const IndexPage: React.FC = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "Index Page";
+  }, []);
 
   return (
     <div className="index-page">
