@@ -14,8 +14,8 @@ const ChatUI = () => {
   ]);
 
   const [conversations] = useState([
-    { id: "1", name: 'Nguyễn Văn A', avatarUrl: null, isOnline: true, lastMsg: 'Cuối tuần này mình đi chơi nhé', time: '10:32', unread: 2 },
-    { id: "2", name: 'Trần Thị B', avatarUrl: null, isOnline: false, lastMsg: 'Okela, hẹn gặp lại', time: 'Hôm qua', unread: 0 },
+    { id: "1", name: 'Nguyễn Văn A', avatarUrl: "/assets/images/pexels-cottonbro-10034377.jpg", isOnline: true, lastMsg: 'Cuối tuần này mình đi chơi nhé', time: '10:32', unread: 2 },
+    { id: "2", name: 'Trần Thị B', avatarUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=600&fit=crop", isOnline: false, lastMsg: 'Okela, hẹn gặp lại', time: 'Hôm qua', unread: 0 },
     { id: "3", name: 'Lê Văn C', avatarUrl: null, isOnline: true, lastMsg: 'Đã gửi một file', time: 'T2', unread: 0 },
     { id: "4", name: 'Phạm Thị D', avatarUrl: null, isOnline: false, lastMsg: 'Thanks bạn nhé!', time: 'T2', unread: 0 },
     { id: "5", name: 'Hoàng Văn E', avatarUrl: null, isOnline: true, lastMsg: 'Mình đang bận, call lại sau nhé', time: 'CN', unread: 1 },

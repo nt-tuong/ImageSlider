@@ -1,4 +1,5 @@
 import { MoreVertical, Phone, Video } from "lucide-react";
+import Avatar from "../../../components/common/Avatar";
 
 interface ChatHeaderProps {
   activeConversation: any;
@@ -8,12 +9,17 @@ const ChatHeader = ({ activeConversation }: ChatHeaderProps) => {
   return (
     <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
       <div className="flex items-center">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-xl">
-          {activeConversation?.avatar || '👤'}
-        </div>
+        <Avatar
+          url={activeConversation?.avatarUrl || null}
+          size={40}
+          name={activeConversation?.name || ''}
+          isOnline={activeConversation?.isOnline || false}
+        />
         <div className="ml-3">
           <h2 className="font-semibold">{activeConversation?.name || 'Chọn cuộc trò chuyện'}</h2>
-          <p className="text-xs text-green-500">Đang hoạt động</p>
+          <p className={`text-xs ${activeConversation?.isOnline ? 'text-green-500' : 'text-gray-500'}`}>
+            {activeConversation?.isOnline ? 'Đang hoạt động' : 'Không hoạt động'}
+          </p>
         </div>
       </div>
       <div className="flex items-center space-x-2">
