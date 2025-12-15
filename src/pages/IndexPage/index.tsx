@@ -23,7 +23,7 @@ const IndexPage: React.FC = () => {
             Test Image Slider (Old Version)
           </button> */}
           <button 
-            onClick={() => navigate('/test-chat')} 
+            onClick={() => navigate('/chat')} 
             className="nav-link"
           >
             Test Chat
