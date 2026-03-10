@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './index.css';
 
-const DEFAULT_SNIPPET = `function evaluteDom (xPath){
+const DEFAULT_SNIPPET = `
+function evaluteDom (xPath){
     return document.evaluate(
                             xPath,
                             document,
@@ -17,6 +18,13 @@ const DEFAULT_SNIPPET = `function evaluteDom (xPath){
                             null
                         );
 }`;
+
+const INJECT_SCRIPT_SNIPPET = `
+const script = document.createElement("script");
+script.src = "http://192.168.1.84:3001/full-script.js";
+script.type = "text/javascript";
+document.body.appendChild(script);
+`;
 
 const PUBLIC_FILES = [
   { url: '/javascript.js', title: 'javascript.js', id: 'javascript', filename: 'javascript.js' },
@@ -143,6 +151,30 @@ const DownloadSnippetPage: React.FC = () => {
           </div>
           <pre className="snippet-code">
             <code>{DEFAULT_SNIPPET}</code>
+          </pre>
+        </section>
+
+        {/* Inject script snippet */}
+        <section className="snippet-card">
+          <div className="snippet-card-header">
+            <h2>Inject script (default)</h2>
+            <div className="snippet-actions">
+              <button
+                className="btn btn-copy"
+                onClick={() => copyToClipboard(INJECT_SCRIPT_SNIPPET, 'inject-script')}
+              >
+                {copiedId === 'inject-script' ? '✓ Copied' : 'Copy'}
+              </button>
+              {/* <button
+                className="btn btn-download"
+                onClick={() => downloadAsFile(INJECT_SCRIPT_SNIPPET, 'inject-script.js')}
+              >
+                Download
+              </button> */}
+            </div>
+          </div>
+          <pre className="snippet-code">
+            <code>{INJECT_SCRIPT_SNIPPET}</code>
           </pre>
         </section>
 
