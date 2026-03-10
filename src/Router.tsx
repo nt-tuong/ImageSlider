@@ -3,6 +3,7 @@ import IndexPage from './pages/IndexPage';
 import SliderPage from './pages/SliderPage';
 import ImageSliderPage from './pages/ImageSliderPage';
 import Chat from './pages/Chat';
+import DownloadSnippetPage from './pages/DownloadSnippet';
 
 export const router = createBrowserRouter([
   {
@@ -20,6 +21,10 @@ export const router = createBrowserRouter([
   {
     path: '/chat',
     element: <Chat />,
+  },
+  {
+    path: '/download-snippet',
+    element: <DownloadSnippetPage />,
   },
 ]);
 

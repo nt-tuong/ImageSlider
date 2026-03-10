@@ -34,6 +34,12 @@ const IndexPage: React.FC = () => {
           >
             Test Slider (New Version)
           </button>
+          <button 
+            onClick={() => navigate('/download-snippet')} 
+            className="nav-link"
+          >
+            Download Snippet
+          </button>
         </div>
       </div>
     </div>
