@@ -2,6 +2,22 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './index.css';
 
+const DEFAULT_SNIPPET = `function evaluteDom (xPath){
+    return document.evaluate(
+                            xPath,
+                            document,
+                            function (prefix) {
+                                if (prefix === "svg" || prefix === "g" || prefix === "path" || prefix === "foreignObject") {
+                                    return "http://www.w3.org/2000/svg";
+                                } else {
+                                    return null;
+                                }
+                            },
+                            XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+                            null
+                        );
+}`;
+
 const PUBLIC_FILES = [
   { url: '/javascript.js', title: 'javascript.js', id: 'javascript', filename: 'javascript.js' },
   { url: '/snippet.js', title: 'snippet.js', id: 'snippet', filename: 'snippet.js' },
@@ -41,10 +57,35 @@ const DownloadSnippetPage: React.FC = () => {
   }, []);
 
   const copyToClipboard = async (text: string, id: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
+    const showCopied = () => {
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        showCopied();
+        return;
+      }
+    } catch {
+      // Fall through to fallback
+    }
+
+    // Fallback for macOS Safari / non-secure context: use execCommand
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      textarea.style.top = '0';
+      textarea.setAttribute('readonly', '');
+      document.body.appendChild(textarea);
+      textarea.select();
+      textarea.setSelectionRange(0, text.length);
+      const ok = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      if (ok) showCopied();
     } catch (err) {
       console.error('Copy failed:', err);
     }
@@ -76,11 +117,35 @@ const DownloadSnippetPage: React.FC = () => {
         </button>
         <h1>Download Snippet</h1>
         <p className="snippet-subtitle">
-          Nội dung đọc từ public: javascript.js và snippet.js
+          Copy or download the snippet to integrate into your project
         </p>
       </header>
 
       <div className="snippet-list">
+        {/* Default instance snippet */}
+        <section className="snippet-card">
+          <div className="snippet-card-header">
+            <h2>evaluateDom (default)</h2>
+            <div className="snippet-actions">
+              <button
+                className="btn btn-copy"
+                onClick={() => copyToClipboard(DEFAULT_SNIPPET, 'default')}
+              >
+                {copiedId === 'default' ? '✓ Copied' : 'Copy'}
+              </button>
+              <button
+                className="btn btn-download"
+                onClick={() => downloadAsFile(DEFAULT_SNIPPET, 'evaluateDom.js')}
+              >
+                Download
+              </button>
+            </div>
+          </div>
+          <pre className="snippet-code">
+            <code>{DEFAULT_SNIPPET}</code>
+          </pre>
+        </section>
+
         {PUBLIC_FILES.map(({ url, title, id, filename }) => (
           <section key={id} className="snippet-card">
             <div className="snippet-card-header">
@@ -103,10 +168,10 @@ const DownloadSnippetPage: React.FC = () => {
               </div>
             </div>
             {loading[id] && (
-              <div className="snippet-loading">Đang tải...</div>
+              <div className="snippet-loading">Loading...</div>
             )}
             {errors[id] && (
-              <div className="snippet-error">Lỗi: {errors[id]}</div>
+              <div className="snippet-error">Error: {errors[id]}</div>
             )}
             {!loading[id] && !errors[id] && fileContents[id] !== undefined && (
               <pre className="snippet-code">
