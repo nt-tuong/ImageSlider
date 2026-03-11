@@ -4,6 +4,7 @@ import SliderPage from './pages/SliderPage';
 import ImageSliderPage from './pages/ImageSliderPage';
 import Chat from './pages/Chat';
 import DownloadSnippetPage from './pages/DownloadSnippet';
+import TextNodeTestPage from './pages/TextNodeTest';
 
 export const router = createBrowserRouter([
   {
@@ -25,6 +26,10 @@ export const router = createBrowserRouter([
   {
     path: '/download-snippet',
     element: <DownloadSnippetPage />,
+  },
+  {
+    path: '/text-node-test',
+    element: <TextNodeTestPage />,
   },
 ]);
 

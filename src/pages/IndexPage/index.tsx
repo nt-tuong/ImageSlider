@@ -40,6 +40,12 @@ const IndexPage: React.FC = () => {
           >
             Download Snippet
           </button>
+          <button 
+            onClick={() => navigate('/text-node-test')} 
+            className="nav-link"
+          >
+            Text Node Test (Safari vs Chrome)
+          </button>
         </div>
       </div>
     </div>
