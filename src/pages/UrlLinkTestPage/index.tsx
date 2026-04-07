@@ -20,37 +20,35 @@ const UrlLinkTestPage = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const [hiddenCount, setHiddenCount] = useState(0);
+  const [hiddenCount, setHiddenCount] = useState<number>(0);
+  const [showFade, setShowFade] = useState<boolean>(false);
 
   const calculateHidden = () => {
     const container = containerRef.current;
     const content = contentRef.current;
+
     if (!container || !content) return;
 
-    const containerWidth = container.offsetWidth;
+    const containerRect = container.getBoundingClientRect();
+    const limit = containerRect.width;
 
-    let total = 0;
     let visible = 0;
-
     const children = Array.from(content.children) as HTMLElement[];
+    for (const el of children) {
+      if (!el.classList.contains("url-item")) continue;
 
-    for (let i = 0; i < children.length; i++) {
-      const el = children[i];
+      const rect = el.getBoundingClientRect();
+      const itemStart = rect.left - containerRect.left;
 
-      const width = el.offsetWidth;
-      if (!width) continue;
+      if (itemStart >= limit) break;
 
-      total += width;
-
-      if (total <= containerWidth - 48) {
-        if (el.classList.contains("url-item")) {
-          visible++;
-        }
-      }
+      visible++;
     }
 
-    const count = items.length - visible;
-    setHiddenCount(count > 0 ? count : 0);
+    setHiddenCount(items.length - visible);
+
+    const isShowFade = content.scrollWidth > limit;
+    setShowFade(isShowFade);
   };
 
   useEffect(() => {
@@ -73,20 +71,27 @@ const UrlLinkTestPage = () => {
         {items.map((item, index) => (
           <Fragment key={index}>
             {index > 0 && (
-              <span className="url-item-divider"><Divider /></span>
+              <span className="url-item-divider">
+                <Divider />
+              </span>
             )}
-            <a className="url-item" href={item} target="_blank" rel="noopener noreferrer">{item}</a>
+            <a
+              className="url-item"
+              href={item}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {item}
+            </a>
           </Fragment>
         ))}
       </div>
 
       {/* Fade */}
-      {hiddenCount > 0 && <div className="fade-overlay" />}
+      {showFade && <div className="fade-overlay" />}
 
       {/* +N */}
-      {hiddenCount > 0 && (
-        <span className="more-overlay">+{hiddenCount}</span>
-      )}
+      {hiddenCount > 0 && <span className="more-overlay">...{hiddenCount}件</span>}
     </div>
   );
 };
