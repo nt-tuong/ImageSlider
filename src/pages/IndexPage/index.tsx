@@ -46,6 +46,12 @@ const IndexPage: React.FC = () => {
           >
             Text Node Test (Safari vs Chrome)
           </button>
+          <button 
+            onClick={() => navigate('/url-link-test')} 
+            className="nav-link"
+          >
+            Url Link Test (Url Link)
+          </button>
         </div>
       </div>
     </div>

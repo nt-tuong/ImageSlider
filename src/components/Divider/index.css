@@ -1,0 +1,7 @@
+.divider-container {
+  width: 1px;
+  height: 16px;
+  flex-shrink: 0;
+  
+  background: var(--e-4-e-7-e-9, #E4E7E9);
+}
