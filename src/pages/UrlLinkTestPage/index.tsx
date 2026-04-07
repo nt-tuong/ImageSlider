@@ -1,9 +1,6 @@
 import { useRef, useState, useEffect, Fragment } from "react";
-import "./index.css";
 import Divider from "../../components/Divider";
-import useVisibleItems from "../hooks/useVisibleItems";
-import useFadeByCompare from "../hooks/useFadeByCompare";
-import useDynamicFade from "../hooks/useDynamicFade";
+import "./index.css";
 
 interface UrlLinkTestPageProps {
   items: string[];
@@ -19,80 +16,77 @@ const items = [
   "https://www.github.com",
 ];
 
-const DIVIDER_WIDTH_PX = 1 + 4 + 4;
-
 const UrlLinkTestPage = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const contentDisplayRef = useRef<HTMLDivElement>(null);
-  const contentMeasureRef = useRef<HTMLDivElement>(null);
-  const moreRef = useRef<HTMLSpanElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  const showFade = useFadeByCompare(contentDisplayRef, contentMeasureRef);
-  const { visibleCount, measureRefs } = useVisibleItems({
-    items,
-    containerRef,
-    extraSpace: 60,
-    dividerWidth: DIVIDER_WIDTH_PX,
-  });
+  const [hiddenCount, setHiddenCount] = useState(0);
 
-  const hiddenCount = items.length - visibleCount;
-  const getContentClass = () => {
-    const result = ["content"];
+  const calculateHidden = () => {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!container || !content) return;
 
-    // Check fade effect
-    if (showFade) {
-      result.push("fade-item-url");
+    const containerWidth = container.offsetWidth;
+
+    let total = 0;
+    let visible = 0;
+
+    const children = Array.from(content.children) as HTMLElement[];
+
+    for (let i = 0; i < children.length; i++) {
+      const el = children[i];
+
+      const width = el.offsetWidth;
+      if (!width) continue;
+
+      total += width;
+
+      if (total <= containerWidth - 48) {
+        if (el.classList.contains("url-item")) {
+          visible++;
+        }
+      }
     }
 
-    return result.join(" ").trim();
+    const count = items.length - visible;
+    setHiddenCount(count > 0 ? count : 0);
   };
 
-  useDynamicFade(contentDisplayRef, moreRef);
+  useEffect(() => {
+    calculateHidden();
+
+    const observer = new ResizeObserver(() => {
+      requestAnimationFrame(calculateHidden);
+    });
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [items]);
 
   return (
-    <div ref={containerRef} className="container">
-      {/* Div display nội dung cho người xem */}
-      <div ref={contentDisplayRef} className={getContentClass()}>
+    <div ref={containerRef} className="url-container">
+      <div ref={contentRef} className="content">
         {items.map((item, index) => (
           <Fragment key={index}>
             {index > 0 && (
-              <span className="url-item-divider">
-                <Divider />
-              </span>
+              <span className="url-item-divider"><Divider /></span>
             )}
-            <a href={item} className="url-item">
-              {item}
-            </a>
+            <a className="url-item" href={item} target="_blank" rel="noopener noreferrer">{item}</a>
           </Fragment>
         ))}
       </div>
 
-      {hiddenCount > 0 && <span ref={moreRef} className="more">... +{hiddenCount}件</span>}
+      {/* Fade */}
+      {hiddenCount > 0 && <div className="fade-overlay" />}
 
-      {/* Div hidden để đo chiều dài của các item */}
-      <div
-        ref={contentMeasureRef}
-        className={getContentClass() + " measure-layer"}
-      >
-        {items.map((item, index) => (
-          <Fragment key={index}>
-            {index > 0 && (
-              <span className="url-item-divider">
-                <Divider />
-              </span>
-            )}
-            <a
-              ref={(el) => {
-                if (el) measureRefs.current[index] = el;
-              }}
-              href={item}
-              className="url-item"
-            >
-              {item}
-            </a>
-          </Fragment>
-        ))}
-      </div>
+      {/* +N */}
+      {hiddenCount > 0 && (
+        <span className="more-overlay">+{hiddenCount}</span>
+      )}
     </div>
   );
 };
