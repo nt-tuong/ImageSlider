@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, Fragment } from "react";
+import { useRef, useState, useEffect } from "react";
 import Divider from "../../components/Divider";
 import "./index.css";
 
@@ -18,22 +18,20 @@ const items = [
 
 const UrlLinkTestPage = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
 
   const [hiddenCount, setHiddenCount] = useState<number>(0);
   const [showFade, setShowFade] = useState<boolean>(false);
 
   const calculateHidden = () => {
     const container = containerRef.current;
-    const content = contentRef.current;
 
-    if (!container || !content) return;
+    if (!container) return;
 
     const containerRect = container.getBoundingClientRect();
     const limit = containerRect.width;
 
     let visible = 0;
-    const children = Array.from(content.children) as HTMLElement[];
+    const children = Array.from(container.children) as HTMLElement[];
     for (const el of children) {
       if (!el.classList.contains("url-item")) continue;
 
@@ -47,7 +45,7 @@ const UrlLinkTestPage = () => {
 
     setHiddenCount(items.length - visible);
 
-    const isShowFade = content.scrollWidth > limit;
+    const isShowFade = container.scrollWidth > limit;
     setShowFade(isShowFade);
   };
 
@@ -67,31 +65,37 @@ const UrlLinkTestPage = () => {
 
   return (
     <div ref={containerRef} className="url-container">
-      <div ref={contentRef} className="content">
-        {items.map((item, index) => (
-          <Fragment key={index}>
-            {index > 0 && (
-              <span className="url-item-divider">
-                <Divider />
-              </span>
-            )}
-            <a
-              className="url-item"
-              href={item}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {item}
-            </a>
-          </Fragment>
-        ))}
-      </div>
+      {items.flatMap((item, index) => {
+        const link = (
+          <a
+            key={`url-${index}`}
+            className="url-item"
+            href={item}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {item}
+          </a>
+        );
+        if (index === 0) return [link];
+        return [
+          <span key={`divider-${index}`} className="url-item-divider">
+            <Divider />
+          </span>,
+          link,
+        ];
+      })}
 
-      {/* Fade */}
-      {showFade && <div className="fade-overlay" />}
+      {showFade && (
+        <>
+          <div className="fade-overlay" aria-hidden />
+          <div className="fade-hit-block" aria-hidden />
+        </>
+      )}
 
-      {/* +N */}
-      {hiddenCount > 0 && <span className="more-overlay">...{hiddenCount}件</span>}
+      {hiddenCount > 0 && (
+        <span className="more-overlay">...{hiddenCount}件</span>
+      )}
     </div>
   );
 };
