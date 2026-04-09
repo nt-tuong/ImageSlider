@@ -88,5 +88,20 @@
   
   background-color: #f7f8f9;
   padding-left: 6px;
-  
+}
+
+.url-container.is-scrollable {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: auto;
+}
+
+.url-container.is-scrollable::-webkit-scrollbar {
+  height: 6px;
+  display: block; /* Chrome */
+}
+
+.url-container.is-scrollable::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
 }

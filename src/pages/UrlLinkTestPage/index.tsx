@@ -4,6 +4,7 @@ import "./index.css";
 
 interface UrlLinkTestPageProps {
   items: string[];
+  scrollable?: boolean;
 }
 
 const items = [
@@ -18,6 +19,7 @@ const items = [
 
 const UrlLinkTestPage = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [scrollable, setScrollable] = useState<boolean>(false);
 
   const [hiddenCount, setHiddenCount] = useState<number>(0);
   const [showFade, setShowFade] = useState<boolean>(false);
@@ -64,7 +66,10 @@ const UrlLinkTestPage = () => {
   }, [items]);
 
   return (
-    <div ref={containerRef} className="url-container">
+    <div
+      ref={containerRef}
+      className={`url-container ${scrollable ? "is-scrollable" : ""}`}
+    >
       {items.flatMap((item, index) => {
         const link = (
           <a
@@ -86,14 +91,11 @@ const UrlLinkTestPage = () => {
         ];
       })}
 
-      {showFade && (
-        <>
+      {!scrollable && showFade && (
           <div className="fade-overlay" aria-hidden />
-          <div className="fade-hit-block" aria-hidden />
-        </>
       )}
 
-      {hiddenCount > 0 && (
+      {!scrollable && hiddenCount > 0 && (
         <span className="more-overlay">...{hiddenCount}件</span>
       )}
     </div>

@@ -6,6 +6,7 @@ import Chat from './pages/Chat';
 import DownloadSnippetPage from './pages/DownloadSnippet';
 import TextNodeTestPage from './pages/TextNodeTest';
 import UrlLinkTestPage from './pages/UrlLinkTestPage';
+import MessageHelperPage from './pages/MessageHelperPage';
 
 export const router = createBrowserRouter([
   {
@@ -35,6 +36,10 @@ export const router = createBrowserRouter([
   {
     path: '/url-link-test',
     element: <UrlLinkTestPage />,
+  },
+  {
+    path: '/message-helper-sample',
+    element: <MessageHelperPage />,
   },
 ]);
 

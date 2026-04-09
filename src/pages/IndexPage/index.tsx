@@ -52,6 +52,12 @@ const IndexPage: React.FC = () => {
           >
             Url Link Test (Url Link)
           </button>
+          <button 
+            onClick={() => navigate('/message-helper-sample')} 
+            className="nav-link"
+          >
+            Message Helper Sample
+          </button>
         </div>
       </div>
     </div>
